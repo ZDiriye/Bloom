@@ -9,16 +9,21 @@ import {
   Platform, 
   SafeAreaView,
   Image,
-  Dimensions
+  Dimensions,
+  ActivityIndicator
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+
 
 export default function App() {
   const [facing, setFacing] = useState<CameraType>('back');
   const [flash, setFlash] = useState<'on' | 'off'>('off');
   const [permission, requestPermission] = useCameraPermissions();
   const [capturedPhoto, setCapturedPhoto] = useState<string | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
   const cameraRef = useRef<CameraView>(null);
+  const router = useRouter();
 
   useEffect(() => {
     if (Platform.OS === 'android') {
@@ -56,14 +61,13 @@ export default function App() {
   }
 
   function closeCamera() {
-    console.log('Camera closed');
-    alert('Camera closed - In a real app, this would navigate back');
+    router.back();
   }
 
   async function takePicture() {
     if (cameraRef.current) {
       const photo = await cameraRef.current.takePictureAsync();
-      setCapturedPhoto(photo.uri);
+      setCapturedPhoto(photo?.uri||null);
       console.log(photo);
     }
   }
@@ -73,9 +77,26 @@ export default function App() {
   }
 
   function confirmPicture() {
-    console.log('Picture confirmed:', capturedPhoto);
-    alert('Picture confirmed - In a real app, this would save or use the photo');
-    setCapturedPhoto(null);
+    // Show processing wheel
+    setIsProcessing(true);
+    
+    // Simulate processing time (you'll replace this with your model processing)
+    setTimeout(() => {
+      // After processing is complete
+      setIsProcessing(false);
+      setCapturedPhoto(null);
+      // Here you would typically navigate to the next screen or update state with the processed result
+    }, 3000);
+  }
+
+  // Loading screen (fully opaque)
+  if (isProcessing) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#ffffff" />
+        <Text style={styles.processingText}>Processing photo...</Text>
+      </View>
+    );
   }
 
   // Photo preview screen
@@ -189,6 +210,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#000000', // Fully opaque black background
+  },
   message: {
     textAlign: 'center',
     paddingBottom: 20,
@@ -259,7 +286,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   previewHeader: {
-    paddingHorizontal: 0,
+    paddingHorizontal: 20,
     paddingTop: 0,
   },
   previewFooter: {
@@ -279,5 +306,11 @@ const styles = StyleSheet.create({
     color: 'white',
     marginTop: 5,
     fontSize: 16,
+  },
+  processingText: {
+    color: 'white',
+    fontSize: 18,
+    marginTop: 15,
+    fontWeight: '500',
   },
 });
