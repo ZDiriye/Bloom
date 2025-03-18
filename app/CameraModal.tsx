@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { predictImage } from '../utils/mlModel';
 
 
 export default function App() {
@@ -76,19 +77,29 @@ export default function App() {
     setCapturedPhoto(null);
   }
 
-  function confirmPicture() {
-    // Show processing wheel
+  async function confirmPicture() {
+    if (!capturedPhoto) return;
+  
     setIsProcessing(true);
-    
-    // Simulate processing time (you'll replace this with your model processing)
-    setTimeout(() => {
-      // After processing is complete
+    try {
+      const prediction = await predictImage(capturedPhoto, facing === 'front');
       setIsProcessing(false);
       setCapturedPhoto(null);
-      // Here you would typically navigate to the next screen or update state with the processed result
-    }, 3000);
+      // Navigate to plant details screen with the prediction data
+      router.replace({
+        pathname: '/(tabs)/plant_info',
+        params: { 
+          plantName: prediction,
+          // You can add other prediction data here as needed
+        // confidence: prediction.confidence,
+        // etc.
+      }
+      });
+    } catch (error) {
+      console.error('Prediction failed:', error);
+      setIsProcessing(false);
+    }
   }
-
   // Loading screen (fully opaque)
   if (isProcessing) {
     return (
@@ -128,7 +139,7 @@ export default function App() {
               onPress={confirmPicture}
             >
               <Ionicons name="checkmark-circle" size={28} color="white" />
-              <Text style={styles.previewButtonText}>Use Photo</Text>
+              <Text style={styles.previewButtonText}>Confirm</Text>
             </TouchableOpacity>
           </View>
         </SafeAreaView>

@@ -44,7 +44,7 @@
         {
           "photosPermission": "Allow Bloom to access your photos to select images of plants."
         }
-      ]    ],
+      ]   ],
     "experiments": {
       "typedRoutes": true
     }
