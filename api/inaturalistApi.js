@@ -26,3 +26,16 @@ export async function fetchPlantData(plantName) {
     throw error;
   }
 }
+
+export async function fetchPlantObservations(plantId) {
+  try {
+    const response = await fetch(
+      `https://api.inaturalist.org/v1/observations?taxon_id=${plantId}&geo=true&per_page=50`
+    );
+    if (!response.ok) throw new Error(`Network error: ${response.status}`);
+    return await response.json();
+  } catch (error) {
+    console.error('Observation fetch error:', error);
+    throw error;
+  }
+}

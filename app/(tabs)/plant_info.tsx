@@ -1,371 +1,543 @@
-import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, Image, ScrollView, Linking } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, Linking, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
-import { fetchPlantData } from '../../api/inaturalistApi';
+import { fetchPlantData, fetchPlantObservations } from '../../api/inaturalistApi';
+import MapView, { Marker } from 'react-native-maps';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function PlantInfoScreen() {
   const { plantName } = useLocalSearchParams();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const [plantInfo, setPlantInfo] = useState<any>(null);
+  const [observations, setObservations] = useState<any[]>([]);
+  const [mapRegion, setMapRegion] = useState({
+    latitude: 0,
+    longitude: 0,
+    latitudeDelta: 40,
+    longitudeDelta: 40,
+  });
+  const [loadingMap, setLoadingMap] = useState(true);
 
   useEffect(() => {
     if (!plantName) return;
     
     const loadData = async () => {
       try {
-        const data = await fetchPlantData(plantName);
-        setPlantInfo(data?.results?.[0] || null);
+        const plantData = await fetchPlantData(plantName);
+        const detailedPlant = plantData?.results?.[0];
+        setPlantInfo(detailedPlant);
+
+        if (detailedPlant?.id) {
+          const obsData = await fetchPlantObservations(detailedPlant.id);
+          setObservations(obsData?.results || []);
+          
+          if (obsData?.results?.length > 0) {
+            const firstObs = obsData.results[0];
+            if (firstObs.geojson?.coordinates) {
+              setMapRegion({
+                latitude: firstObs.geojson.coordinates[1],
+                longitude: firstObs.geojson.coordinates[0],
+                latitudeDelta: 20,
+                longitudeDelta: 20,
+              });
+            }
+          }
+          setLoadingMap(false);
+        }
       } catch (error) {
-        console.error('Fetch error:', error);
+        console.error('Load error:', error);
+        setLoadingMap(false);
       }
     };
     loadData();
   }, [plantName]);
 
-  // Get detailed taxonomic information
-  const getTaxonomicDetails = () => {
-    const ranks = ['kingdom', 'phylum', 'class', 'order', 'family', 'genus'];
-    return ranks.map(rank => {
-      const ancestor = plantInfo?.ancestors?.find((a: any) => a.rank === rank) || {};
-      return {
-        rank,
-        name: ancestor.name,
-        commonName: ancestor.preferred_common_name,
-        rankLevel: ancestor.rank_level
-      };
-    });
+  const getPlantTraits = () => ({
+    isExtinct: plantInfo?.extinct ? 'Extinct' : 'Not Extinct',
+    observations: plantInfo?.observations_count?.toLocaleString() || '0',
+    conservationStatus: plantInfo?.conservation_statuses?.[0]?.status || 'Not Assessed',
+    authority: plantInfo?.conservation_statuses?.[0]?.authority || 'N/A',
+    isEndemic: plantInfo?.endemic ? 'Endemic' : 'Not Endemic',
+    nativeStatus: plantInfo?.native_status || 'Unknown',
+    firstObserved: plantInfo?.first_observation?.substring(0, 4) || 'Unknown'
+  });
+
+  // Function to get conservation status color
+  const getConservationStatusColor = (status: string) => {
+    if (!status || status === 'Not Assessed') return '#ffffff';
+    
+    switch(status) {
+      case 'LC': return '#4caf50'; // Least Concern - Green
+      case 'NT': return '#8bc34a'; // Near Threatened - Light Green
+      case 'VU': return '#ffc107'; // Vulnerable - Yellow
+      case 'EN': return '#ff9800'; // Endangered - Orange
+      case 'CR': return '#f44336'; // Critically Endangered - Red
+      case 'EW': return '#9c27b0'; // Extinct in Wild - Purple
+      case 'EX': return '#000000'; // Extinct - Black
+      default: return '#ffffff';
+    }
   };
 
-  // Enhanced traits extraction
-  const getPlantTraits = () => ({
-    observations: plantInfo?.observations_count?.toLocaleString() || '0',
-    listedOn: plantInfo?.listed_taxa_count?.toLocaleString() || '0',
-    taxonSchemes: plantInfo?.taxon_schemes_count?.toLocaleString() || '0',
-    taxonChanges: plantInfo?.taxon_changes_count?.toLocaleString() || '0',
-    isExtinct: plantInfo?.extinct ? 'Extinct' : 'Extant',
-    visionIdentified: plantInfo?.vision ? 'Yes' : 'No',
-    conservationStatus: plantInfo?.conservation_statuses?.[0]?.status || 'Not evaluated',
-    conservationAuthority: plantInfo?.conservation_statuses?.[0]?.authority || 'N/A',
-    conservationDetails: plantInfo?.conservation_statuses?.[0]?.status_text || 'No conservation data',
-    rankLevel: `${Math.round((plantInfo?.rank_level || 0) * 100)}% match`,
-    nativeStatus: plantInfo?.establishment_means || 'Unknown',
-    firstAppeared: plantInfo?.first_appearance_events?.[0]?.created_at?.substring(0,4) || 'Unknown'
-  });
+  // Function to get full conservation status name
+  const getConservationStatusName = (status: string) => {
+    if (!status || status === 'Not Assessed') return 'Not Assessed';
+    
+    switch(status) {
+      case 'LC': return 'Least Concern';
+      case 'NT': return 'Near Threatened';
+      case 'VU': return 'Vulnerable';
+      case 'EN': return 'Endangered';
+      case 'CR': return 'Critically Endangered';
+      case 'EW': return 'Extinct in Wild';
+      case 'EX': return 'Extinct';
+      default: return status;
+    }
+  };
 
   if (!plantInfo) {
     return (
-      <SafeAreaView style={styles.container}>
+      <View style={[styles.loadingContainer, { paddingTop: insets.top }]}>
+        <LinearGradient colors={['#2c6e49', '#4c956c']} style={StyleSheet.absoluteFillObject} />
+        <ActivityIndicator size="large" color="#ffffff" />
         <Text style={styles.loadingText}>Identifying plant...</Text>
-      </SafeAreaView>
+      </View>
     );
   }
 
   const traits = getPlantTraits();
-  const taxonomicDetails = getTaxonomicDetails();
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
+      <LinearGradient colors={['#2c6e49', '#4c956c']} style={StyleSheet.absoluteFillObject} />
+      
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#333" />
+          <Ionicons name="arrow-back" size={24} color="#ffffff" />
         </TouchableOpacity>
+        <Text numberOfLines={1} style={styles.headerTitle}>{plantInfo.preferred_common_name || plantInfo.name}</Text>
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
-        {/* Image Gallery */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.imageGallery}>
-          {plantInfo.taxon_photos?.map((photo: any, index: number) => (
+        {/* Main Image with fade overlay */}
+        <View style={styles.imageContainer}>
+          {plantInfo.default_photo?.medium_url ? (
             <Image
-              key={index}
-              source={{ uri: photo.photo.medium_url }}
-              style={styles.galleryImage}
+              source={{ uri: plantInfo.default_photo.medium_url }}
+              style={styles.mainImage}
               resizeMode="cover"
             />
-          ))}
-        </ScrollView>
-
-        {/* Names Section */}
-        <View style={styles.nameContainer}>
-          <Text style={styles.scientificName}>{plantInfo.name}</Text>
-          <Text style={styles.commonName}>
-            {plantInfo.preferred_common_name || 'No common name'}
-          </Text>
-          <Text style={styles.nativeStatus}>
-            {traits.nativeStatus.replace(/\b\w/g, l => l.toUpperCase())} Species
-          </Text>
-        </View>
-
-        {/* Enhanced Quick Facts Grid */}
-        <View style={styles.factsGrid}>
-          {[
-            { 
-              icon: 'eye', 
-              label: `${traits.observations}\nObservations`,
-              color: '#4CAF50',
-              meta: 'Citizen Science Data'
-            },
-            { 
-              icon: 'shield', 
-              label: `${traits.conservationStatus}\n(${traits.conservationAuthority})`,
-              color: '#FF9800',
-              meta: 'Conservation Status'
-            },
-            { 
-              icon: 'leaf', 
-              label: traits.isExtinct,
-              color: traits.isExtinct === 'Extinct' ? '#F44336' : '#8BC34A',
-              meta: 'Extinction Status'
-            },
-            { 
-              icon: 'camera', 
-              label: `Vision ID: ${traits.visionIdentified}`,
-              color: '#3F51B5',
-              meta: 'Computer Identification'
-            },
-            { 
-              icon: 'library', 
-              label: `${traits.listedOn}\nConservation Lists`,
-              color: '#009688',
-              meta: 'Legal Protection'
-            },
-            { 
-              icon: 'pulse', 
-              label: `First Seen: ${traits.firstAppeared}`,
-              color: '#9C27B0',
-              meta: 'Historical Data'
-            },
-          ].map((fact, index) => (
-            <View key={index} style={[styles.factCard, { borderLeftColor: fact.color }]}>
-              <Ionicons name={fact.icon as any} size={22} color={fact.color} />
-              <View>
-                <Text style={styles.factText}>{fact.label}</Text>
-                <Text style={styles.factMeta}>{fact.meta}</Text>
-              </View>
+          ) : (
+            <View style={styles.placeholderImage}>
+              <Ionicons name="leaf-outline" size={60} color="#ffffff" />
             </View>
-          ))}
+          )}
+          <LinearGradient 
+            colors={['transparent', 'rgba(0,0,0,0.7)']} 
+            style={styles.imageOverlay}
+          />
+          <View style={styles.nameOverlay}>
+            <Text style={styles.scientificName}>{plantInfo.name}</Text>
+            <Text style={styles.commonName}>
+              {plantInfo.preferred_common_name || 'No common name'}
+            </Text>
+          </View>
         </View>
 
-        {/* Detailed Taxonomy Section */}
+        {/* Enhanced Quick Facts Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Taxonomic Classification</Text>
-          {taxonomicDetails.map((taxon, index) => (
-            <View key={index} style={styles.taxonRow}>
-              <Text style={styles.taxonRank}>{taxon.rank.toUpperCase()}</Text>
-              <View style={styles.taxonNames}>
-                <Text style={styles.taxonScientific}>{taxon.name || 'Unknown'}</Text>
-                {taxon.commonName && (
-                  <Text style={styles.taxonCommon}>({taxon.commonName})</Text>
-                )}
-              </View>
+          <Text style={styles.sectionTitle}>Plant Overview</Text>
+          
+          <View style={styles.factRow}>
+            <View style={styles.factIconContainer}>
+              <Ionicons name="eye" size={22} color="#ffffff" />
             </View>
-          ))}
+            <View style={styles.factContent}>
+              <Text style={styles.factTitle}>Observations</Text>
+              <Text style={styles.factValue}>{traits.observations}</Text>
+              <Text style={styles.factNote}>
+                First recorded: {traits.firstObserved !== 'Unknown' ? traits.firstObserved : 'No data'}
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.factRow}>
+            <View style={[styles.factIconContainer, 
+                    { backgroundColor: getConservationStatusColor(traits.conservationStatus) }]}>
+              <Ionicons name="shield" size={22} color={traits.conservationStatus === 'EX' ? '#ffffff' : '#2c6e49'} />
+            </View>
+            <View style={styles.factContent}>
+              <Text style={styles.factTitle}>Conservation Status</Text>
+              <Text style={styles.factValue}>
+                {getConservationStatusName(traits.conservationStatus)}
+                {traits.conservationStatus !== 'Not Assessed' && ` (${traits.conservationStatus})`}
+              </Text>
+              <Text style={styles.factNote}>Authority: {traits.authority}</Text>
+            </View>
+          </View>
+
+          <View style={styles.factRow}>
+            <View style={[styles.factIconContainer, 
+                     { backgroundColor: traits.isExtinct === 'Extinct' ? '#f44336' : '#4caf50' }]}>
+              <Ionicons name="leaf" size={22} color="#ffffff" />
+            </View>
+            <View style={styles.factContent}>
+              <Text style={styles.factTitle}>Status</Text>
+              <Text style={styles.factValue}>{traits.isExtinct}</Text>
+              <Text style={styles.factNote}>
+                {traits.isEndemic === 'Endemic' ? 'Endemic species' : 'Non-endemic species'}
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.factRow}>
+            <View style={styles.factIconContainer}>
+              <Ionicons name="globe-outline" size={22} color="#ffffff" />
+            </View>
+            <View style={styles.factContent}>
+              <Text style={styles.factTitle}>Native Status</Text>
+              <Text style={styles.factValue}>{traits.nativeStatus !== 'Unknown' ? traits.nativeStatus : 'No data available'}</Text>
+            </View>
+          </View>
         </View>
 
-        {/* Enhanced Conservation Status */}
-        {plantInfo.conservation_statuses?.length > 0 && (
-          <View style={[styles.section, { borderLeftWidth: 4, borderLeftColor: '#FF9800' }]}>
-            <Text style={styles.sectionTitle}>Conservation Details</Text>
-            {plantInfo.conservation_statuses.map((status: any, index: number) => (
-              <View key={index} style={styles.conservationItem}>
-                <Text style={styles.conservationAuthority}>{status.authority}</Text>
-                <Text style={styles.conservationStatus}>{status.status}</Text>
-                <Text style={styles.conservationText}>{status.status_text}</Text>
-                {status.geoprivacy && (
-                  <Text style={styles.conservationGeo}>Geoprivacy: {status.geoprivacy}</Text>
-                )}
-              </View>
-            ))}
+        {/* Additional Photos */}
+        {plantInfo.taxon_photos?.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Gallery</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.galleryScroll}>
+              {plantInfo.taxon_photos.map(({ photo }: any, index: number) => (
+                <Image
+                  key={index}
+                  source={{ uri: photo.medium_url }}
+                  style={styles.thumbnail}
+                />
+              ))}
+            </ScrollView>
           </View>
         )}
 
-        {/* Description with Expand */}
+        {/* Enhanced Taxonomic Hierarchy */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Taxonomic Hierarchy</Text>
+          
+          <View style={styles.taxonomyContainer}>
+            {plantInfo.ancestors?.map((ancestor: any, index: number) => {
+              // Determine depth level for indentation
+              const depth = index;
+              return (
+                <View key={ancestor.rank} style={[
+                  styles.taxonomyItem,
+                  { marginLeft: depth * 12 }
+                ]}>
+                  <View style={[
+                    styles.taxonomyBullet, 
+                    { backgroundColor: `rgba(255,255,255,${0.4 + (index * 0.07)})` }
+                  ]} />
+                  <View style={styles.taxonomyTextContainer}>
+                    <Text style={styles.taxonomyRank}>
+                      {ancestor.rank.charAt(0).toUpperCase() + ancestor.rank.slice(1)}
+                    </Text>
+                    <Text style={styles.taxonomyName}>{ancestor.name}</Text>
+                  </View>
+                </View>
+              );
+            })}
+            
+            {/* Current species with special highlight */}
+            <View style={[
+              styles.taxonomyItem, 
+              styles.currentSpecies,
+              { marginLeft: (plantInfo.ancestors?.length || 0) * 12 }
+            ]}>
+              <View style={styles.taxonomyBullet} />
+              <View style={styles.taxonomyTextContainer}>
+                <Text style={styles.taxonomyRank}>Species</Text>
+                <Text style={styles.currentSpeciesName}>{plantInfo.name}</Text>
+              </View>
+            </View>
+          </View>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Observation Locations</Text>
+          {loadingMap ? (
+            <View style={styles.mapPlaceholder}>
+              <ActivityIndicator size="small" color="#ffffff" />
+              <Text style={styles.mapLoadingText}>Loading observation map...</Text>
+            </View>
+          ) : (
+            <View style={styles.mapContainer}>
+              <MapView style={styles.map} region={mapRegion}>
+                {observations
+                  .filter(obs => obs.geojson?.coordinates)
+                  .map((obs, index) => (
+                    <Marker
+                      key={index}
+                      coordinate={{
+                        latitude: obs.geojson.coordinates[1],
+                        longitude: obs.geojson.coordinates[0],
+                      }}
+                      title={`Observed: ${new Date(obs.observed_on).toLocaleDateString()}`}
+                      description={`By: ${obs.user?.login || 'Anonymous'}`}
+                    >
+                      <View style={styles.markerContainer}>
+                        <Ionicons name="leaf" size={18} color="#ffffff" />
+                      </View>
+                    </Marker>
+                  ))}
+              </MapView>
+            </View>
+          )}
+        </View>
+
         {plantInfo.wikipedia_summary && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Species Overview</Text>
+            <Text style={styles.sectionTitle}>Description</Text>
             <Text style={styles.description}>
               {plantInfo.wikipedia_summary.replace(/<\/?[^>]+(>|$)/g, '')}
             </Text>
-            {plantInfo.wikipedia_url && (
-              <TouchableOpacity 
-                style={styles.wikipediaLink}
-                onPress={() => Linking.openURL(plantInfo.wikipedia_url)}
-              >
-                <Ionicons name="open-outline" size={16} color="#3F51B5" />
-                <Text style={styles.wikipediaText}>Read full Wikipedia article</Text>
-              </TouchableOpacity>
-            )}
+          </View>
+        )}
+
+        {plantInfo.wikipedia_url && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>External Links</Text>
+            <TouchableOpacity 
+              onPress={() => Linking.openURL(plantInfo.wikipedia_url)}
+              style={styles.linkButton}
+            >
+              <Text style={styles.linkText}>
+                <Ionicons name="open-outline" size={16} /> View on Wikipedia
+              </Text>
+            </TouchableOpacity>
           </View>
         )}
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   header: {
     flexDirection: 'row',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  headerTitle: {
+    color: '#ffffff',
+    fontSize: 18,
+    fontWeight: '600',
+    flex: 1,
+    marginLeft: 16,
   },
   backButton: {
-    marginRight: 16,
+    padding: 8,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.2)',
   },
   content: {
-    padding: 20,
+    padding: 16,
+    paddingBottom: 40,
   },
-  imageGallery: {
-    marginBottom: 15,
+  imageContainer: {
+    height: 260,
+    borderRadius: 16,
+    overflow: 'hidden',
+    marginBottom: 16,
+    position: 'relative',
   },
-  galleryImage: {
-    width: 200,
-    height: 150,
-    borderRadius: 8,
-    marginRight: 10,
+  mainImage: {
+    width: '100%',
+    height: '100%',
   },
-  nameContainer: {
-    marginBottom: 24,
+  placeholderImage: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: 'rgba(0,0,0,0.2)',
+    justifyContent: 'center',
     alignItems: 'center',
+  },
+  imageOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    width: '100%',
+    height: '50%',
+  },
+  nameOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    width: '100%',
+    padding: 16,
   },
   scientificName: {
-    fontSize: 26,
-    fontWeight: '800',
-    color: '#2E7D32',
-    textAlign: 'center',
-    marginBottom: 4,
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#ffffff',
+    textShadowColor: 'rgba(0, 0, 0, 0.75)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
   },
   commonName: {
-    fontSize: 20,
-    color: '#4CAF50',
-    marginBottom: 8,
-    fontStyle: 'italic',
-  },
-  nativeStatus: {
-    fontSize: 14,
-    color: '#757575',
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-  },
-  factsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-    marginBottom: 24,
-  },
-  factCard: {
-    flex: 1,
-    minWidth: '100%',
-    backgroundColor: '#f8f9fa',
-    borderRadius: 8,
-    padding: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 15,
-    borderLeftWidth: 4,
-  },
-  factText: {
     fontSize: 16,
-    color: '#333',
-    lineHeight: 22,
-  },
-  factMeta: {
-    fontSize: 12,
-    color: '#666',
-    marginTop: 4,
+    color: '#ffffff',
+    fontStyle: 'italic',
+    textShadowColor: 'rgba(0, 0, 0, 0.75)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
   },
   section: {
-    backgroundColor: '#f8f9fa',
-    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    borderRadius: 16,
     padding: 16,
     marginBottom: 16,
   },
   sectionTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#1B5E20',
-    marginBottom: 15,
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#ffffff',
+    marginBottom: 16,
   },
-  taxonRow: {
+  // Enhanced Facts Section Styles
+  factRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 10,
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    marginBottom: 16,
+    alignItems: 'center',
   },
-  taxonRank: {
-    width: '30%',
+  factIconContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  factContent: {
+    flex: 1,
+  },
+  factTitle: {
     fontSize: 14,
-    color: '#757575',
-    fontWeight: '500',
+    color: 'rgba(255,255,255,0.8)',
+    marginBottom: 2,
   },
-  taxonNames: {
-    width: '68%',
+  factValue: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#ffffff',
+    marginBottom: 2,
   },
-  taxonScientific: {
+  factNote: {
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.7)',
+  },
+  // Enhanced Taxonomy Styles
+  taxonomyContainer: {
+    paddingLeft: 8,
+  },
+  taxonomyItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+    position: 'relative',
+  },
+  taxonomyBullet: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: 'rgba(255,255,255,0.8)',
+    marginRight: 12,
+  },
+  taxonomyTextContainer: {
+    flex: 1,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.1)',
+    paddingBottom: 8,
+  },
+  taxonomyRank: {
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.7)',
+    marginBottom: 4,
+  },
+  taxonomyName: {
     fontSize: 15,
-    color: '#333',
-    fontWeight: '500',
+    color: '#ffffff',
   },
-  taxonCommon: {
-    fontSize: 13,
-    color: '#757575',
+  currentSpecies: {
+    marginTop: 8,
+  },
+  currentSpeciesName: {
+    fontSize: 16,
+    color: '#ffffff',
+    fontWeight: '700',
     fontStyle: 'italic',
   },
-  conservationItem: {
-    marginBottom: 15,
-    padding: 12,
-    backgroundColor: '#fff',
-    borderRadius: 8,
+  galleryScroll: {
+    marginHorizontal: -6,
   },
-  conservationAuthority: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#FF9800',
+  thumbnail: {
+    width: 120,
+    height: 120,
+    borderRadius: 12,
+    marginHorizontal: 6,
   },
-  conservationStatus: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#333',
-    marginVertical: 4,
+  mapContainer: {
+    borderRadius: 12,
+    overflow: 'hidden',
+    height: 240,
   },
-  conservationText: {
-    fontSize: 14,
-    color: '#555',
-    lineHeight: 20,
+  map: {
+    height: '100%',
+    width: '100%',
   },
-  conservationGeo: {
-    fontSize: 12,
-    color: '#999',
-    marginTop: 6,
+  mapPlaceholder: {
+    height: 240,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderRadius: 12,
+  },
+  mapLoadingText: {
+    marginTop: 8,
+    color: '#ffffff',
+  },
+  markerContainer: {
+    backgroundColor: '#2c6e49',
+    borderRadius: 12,
+    padding: 6,
+    borderWidth: 2,
+    borderColor: '#ffffff',
   },
   description: {
     fontSize: 15,
     lineHeight: 22,
-    color: '#444',
-    marginBottom: 12,
-  },
-  wikipediaLink: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginTop: 8,
-  },
-  wikipediaText: {
-    color: '#3F51B5',
-    fontSize: 14,
-    fontWeight: '500',
+    color: '#f0f0f0',
   },
   loadingText: {
     fontSize: 16,
-    color: '#666',
-    textAlign: 'center',
-    marginTop: 40,
+    color: '#ffffff',
+    marginTop: 16,
+  },
+  linkButton: {
+    padding: 12,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    alignItems: 'center',
+  },
+  linkText: {
+    color: '#ffffff',
+    fontWeight: '500',
   },
 });
