@@ -1,40 +1,30 @@
-import React from 'react';
-import { View, StyleSheet } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { IdentifyPlantsCard } from '@/components/IdentifyPlants';
-import { RecentScans } from '@/components/RecentScans';
+import { useEffect } from 'react';
+import { View, Text, ActivityIndicator, Image } from 'react-native';
 import { useRouter } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
 
-export default function HomeScreen() {
-  const insets = useSafeAreaInsets();
+export default function LoadingScreen() {
   const router = useRouter();
 
-  const handleCameraPress = () => {
-    router.push('../CameraModal');
-  };
-
-  const handlePickImagePress = async () => {
-    // Removed permission check for image picker
-    // Navigate or handle the image picking directly
-    //router.push('../ImagePickerModal');
-  };
+  useEffect(() => {
+    // Simulated loading and auth check
+    setTimeout(() => {
+      // Always navigate to login for now
+      // Replace with actual logic later
+      router.replace('/login');
+      
+      // If you want to test home screen directly:
+      // router.replace('/home');
+    }, 2000);
+  }, []);
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top + 20, paddingBottom: insets.bottom }]}>
-      <LinearGradient colors={['#2c6e49', '#4c956c']} style={StyleSheet.absoluteFillObject} />
-      <IdentifyPlantsCard
-        onRequestCameraPermission={handleCameraPress}
-        onPickImage={handlePickImagePress}
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      <Image
+        //source={require('./assets/logo.png')}
+        style={{ width: 100, height: 100, marginBottom: 20 }}
       />
-      <RecentScans />
+      <ActivityIndicator size="large" />
+      <Text>Loading...</Text>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 20,
-  },
-});
