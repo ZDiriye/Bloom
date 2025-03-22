@@ -4,6 +4,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useEffect, useState } from 'react';
 import { fetchPlantData, fetchPlantObservations } from '../../api/inaturalistApi';
+import { auth, savePlantIdentification } from '../../services/firebase';
 
 // Import components
 import PlantHeader from '../../components//plant_info/PlantHeader';
@@ -41,6 +42,22 @@ export default function PlantInfoScreen() {
         if (detailedPlant?.id) {
           const obsData = await fetchPlantObservations(detailedPlant.id);
           setObservations(obsData?.results || []);
+
+          if (auth.currentUser) {
+            try {
+              await savePlantIdentification(
+                auth.currentUser.uid, 
+                detailedPlant,
+                observations
+              );
+            } catch (saveError) {
+              if (saveError instanceof Error) {
+                console.log("Save error:", saveError.message);
+              } else {
+                console.log("Save error:", saveError);
+              }
+            }
+          }
           
           if (obsData?.results?.length > 0) {
             const firstObs = obsData.results[0];
