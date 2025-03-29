@@ -18,19 +18,23 @@ export default function TabLayout() {
         headerShown: false,
         tabBarButton: HapticTab,
         tabBarBackground: TabBarBackground,
-        tabBarStyle: Platform.select({
-          ios: {
-            // Use a transparent background on iOS to show the blur effect
-            position: 'absolute',
-          },
-          default: {},
-        }),
+        tabBarStyle: {
+          position: 'absolute',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          elevation: 0,
+          height: 60,
+        },
+        tabBarHideOnKeyboard: true,
+        tabBarShowLabel: true,
       }}>
       <Tabs.Screen
-        name="index"
+        name="identification"
         options={{
           title: 'Identify',
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="camera.fill" color={color} />,
+          tabBarLabel: 'Identify',
         }}
       />
       <Tabs.Screen
@@ -38,6 +42,15 @@ export default function TabLayout() {
         options={{
           title: 'Home',
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
+          tabBarLabel: 'Home',
+        }}
+      />
+      <Tabs.Screen
+        name="plant_info"
+        options={{
+          title: 'Plant Info',
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="leaf.fill" color={color} />,
+          tabBarLabel: 'Plant Info',
         }}
       />
     </Tabs>

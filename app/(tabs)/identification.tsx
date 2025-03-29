@@ -6,7 +6,7 @@ import { RecentScans } from '@/components/RecentScans';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 
-export default function HomeScreen() {
+export default function IdentificationScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
 

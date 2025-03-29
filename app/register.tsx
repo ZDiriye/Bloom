@@ -1,13 +1,12 @@
 import { useState } from 'react';
 import { View, TextInput, TouchableOpacity, Text, ActivityIndicator, StyleSheet, Alert } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, Stack } from 'expo-router';
 import { auth, db } from '../services/firebase';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import PlantHeader from '../components/plant_info/PlantHeader';
-
 
 export default function RegisterScreen() {
   const router = useRouter();
@@ -47,8 +46,8 @@ export default function RegisterScreen() {
         profilePic: ''
       });
 
-      // 3. Redirect to home screen
-      router.replace('/(tabs)/home');
+      // 3. Redirect to home screen with animation
+      router.push('/(tabs)/home');
     } catch (error: any) {
       console.error('Registration error:', error);
       handleAuthError(error.code);
@@ -73,72 +72,84 @@ export default function RegisterScreen() {
     }
   };
 
+  const goToLogin = () => {
+    router.back();
+  };
+
   return (
-    <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
-      <LinearGradient colors={['#2c6e49', '#4c956c']} style={StyleSheet.absoluteFillObject} />
-      
-      <PlantHeader 
-        title=""
-        onBack={() => router.replace('/login')}
+    <>
+      <Stack.Screen 
+        options={{
+          headerShown: false,
+          animation: 'slide_from_left'
+        }} 
       />
+      <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+        <LinearGradient colors={['#2c6e49', '#4c956c']} style={StyleSheet.absoluteFillObject} />
+        
+        <PlantHeader 
+          title=""
+          onBack={goToLogin}
+        />
 
-      <View style={styles.centerContainer}>
-        <View style={styles.formContainer}>
-          <Text style={styles.title}>Create Account</Text>
-          
-          {error ? <Text style={styles.error}>{error}</Text> : null}
+        <View style={styles.centerContainer}>
+          <View style={styles.formContainer}>
+            <Text style={styles.title}>Create Account</Text>
+            
+            {error ? <Text style={styles.error}>{error}</Text> : null}
 
-          <TextInput
-            style={styles.input}
-            placeholder="User Name"
-            placeholderTextColor="#888"
-            value={displayName}
-            onChangeText={setDisplayName}
-            autoCapitalize="words"
-          />
+            <TextInput
+              style={styles.input}
+              placeholder="User Name"
+              placeholderTextColor="#888"
+              value={displayName}
+              onChangeText={setDisplayName}
+              autoCapitalize="words"
+            />
 
-          <TextInput
-            style={styles.input}
-            placeholder="Email"
-            placeholderTextColor="#888"
-            value={email}
-            onChangeText={setEmail}
-            autoCapitalize="none"
-            keyboardType="email-address"
-          />
+            <TextInput
+              style={styles.input}
+              placeholder="Email"
+              placeholderTextColor="#888"
+              value={email}
+              onChangeText={setEmail}
+              autoCapitalize="none"
+              keyboardType="email-address"
+            />
 
-          <TextInput
-            style={styles.input}
-            placeholder="Password"
-            placeholderTextColor="#888"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-          />
+            <TextInput
+              style={styles.input}
+              placeholder="Password"
+              placeholderTextColor="#888"
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
+            />
 
-          <TouchableOpacity
-            style={styles.button}
-            onPress={handleRegister}
-            disabled={loading}
-          >
-            {loading ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.buttonText}>Create Account</Text>
-            )}
-          </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.button}
+              onPress={handleRegister}
+              disabled={loading}
+            >
+              {loading ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.buttonText}>Create Account</Text>
+              )}
+            </TouchableOpacity>
 
-          <TouchableOpacity 
-            style={styles.link} 
-            onPress={() => router.replace('/login')}
-          >
-            <Text style={styles.linkText}>
-              Already have an account? Login
-            </Text>
-          </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.link} 
+              onPress={goToLogin}
+            >
+              <Text style={styles.linkText}>
+                Already have an account? Login
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
-    </View>
+    </>
   );
 }
 

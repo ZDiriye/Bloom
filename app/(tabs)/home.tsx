@@ -1,5 +1,5 @@
 import { View, Text, Button } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, Stack } from 'expo-router';
 import { auth } from '../../services/firebase';
 
 export default function HomeScreen() {
@@ -16,9 +16,16 @@ export default function HomeScreen() {
   };
 
   return (
-    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-      <Text>Welcome {user?.email}</Text>
-      <Button title="Logout" onPress={handleLogout} />
-    </View>
+    <>
+      <Stack.Screen 
+        options={{
+          headerShown: false,
+        }} 
+      />
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <Text>Welcome {user?.email}</Text>
+        <Button title="Logout" onPress={handleLogout} />
+      </View>
+    </>
   );
 }

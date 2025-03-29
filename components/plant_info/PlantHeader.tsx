@@ -10,10 +10,10 @@ interface PlantHeaderProps {
 const PlantHeader: React.FC<PlantHeaderProps> = ({ title, onBack }) => {
   return (
     <View style={styles.header}>
-      <TouchableOpacity onPress={onBack} style={styles.backButton}>
-        <Ionicons name="arrow-back" size={24} color="#ffffff" />
-      </TouchableOpacity>
       <Text numberOfLines={1} style={styles.headerTitle}>{title}</Text>
+      <TouchableOpacity onPress={onBack} style={styles.backButton}>
+        <Ionicons name="arrow-forward" size={24} color="#ffffff" />
+      </TouchableOpacity>
     </View>
   );
 };
@@ -30,7 +30,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     flex: 1,
-    marginLeft: 16,
+    marginRight: 16,
   },
   backButton: {
     padding: 8,
