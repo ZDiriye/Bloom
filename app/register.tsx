@@ -37,11 +37,10 @@ export default function RegisterScreen() {
       
       // 2. Create user document in Firestore
       await setDoc(doc(db, 'users', userCredential.user.uid), {
-        uid: userCredential.user.uid,
+        userid: userCredential.user.uid,
         email: email.toLowerCase().trim(),
         displayName: displayName.trim(),
         createdAt: serverTimestamp(),
-        lastLogin: serverTimestamp(),
         role: 'user',
         profilePic: ''
       });

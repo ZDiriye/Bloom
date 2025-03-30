@@ -3,26 +3,45 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useEffect, useState } from 'react';
-import { fetchPlantData, fetchPlantObservations } from '../../api/inaturalistApi';
-import { auth, savePlantIdentification } from '../../services/firebase';
+import { plantService } from '../../services/plantService';
+import { auth } from '../../services/firebase';
+import { DocumentData } from 'firebase/firestore';
+import { User } from 'firebase/auth';
+import { Region } from 'react-native-maps';
 
 // Import components
-import PlantHeader from '../../components//plant_info/PlantHeader';
-import PlantImageSection from '../../components//plant_info//PlantImageSection';
-import PlantOverview from '../../components//plant_info/PlantOverview';
-import PlantGallery from '../../components//plant_info/PlantGallery';
-import PlantTaxonomy from '../../components//plant_info/PlantTaxonomy';
-import PlantMap from '../../components//plant_info/PlantMap';
-import PlantDescription from '../../components//plant_info/PlantDescription';
+import PlantHeader from '../../components/plant_info/PlantHeader';
+import PlantImageSection from '../../components/plant_info/PlantImageSection';
+import PlantOverview from '../../components/plant_info/PlantOverview';
+import PlantTaxonomy from '../../components/plant_info/PlantTaxonomy';
+import PlantMap from '../../components/plant_info/PlantMap';
+import PlantDescription from '../../components/plant_info/PlantDescription';
 import ExternalLinks from '../../components/plant_info/ExternalLinks';
+
+interface PlantInfo extends DocumentData {
+  commonName?: string;
+  name: string;
+  defaultPhoto?: string;
+  taxonomy?: any[];
+  wikipediaSummary?: string;
+  wikipediaUrl?: string;
+}
+
+interface Observation {
+  location?: number[];
+  observedOn: string;
+  user?: {
+    login: string;
+  };
+}
 
 export default function PlantInfoScreen() {
   const { plantName } = useLocalSearchParams();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const [plantInfo, setPlantInfo] = useState<any>(null);
-  const [observations, setObservations] = useState<any[]>([]);
-  const [mapRegion, setMapRegion] = useState({
+  const [plantInfo, setPlantInfo] = useState<PlantInfo | null>(null);
+  const [observations, setObservations] = useState<Observation[]>([]);
+  const [mapRegion, setMapRegion] = useState<Region>({
     latitude: 0,
     longitude: 0,
     latitudeDelta: 40,
@@ -31,59 +50,43 @@ export default function PlantInfoScreen() {
   const [loadingMap, setLoadingMap] = useState(true);
 
   useEffect(() => {
-    if (!plantName) return;
-    
+    if (!plantName || !auth.currentUser) return;
+
     const loadData = async () => {
       try {
-        const plantData = await fetchPlantData(plantName);
-        const detailedPlant = plantData?.results?.[0];
-        setPlantInfo(detailedPlant);
-
-        if (detailedPlant?.id) {
-          const obsData = await fetchPlantObservations(detailedPlant.id);
-          setObservations(obsData?.results || []);
-
-          if (auth.currentUser) {
-            try {
-              await savePlantIdentification(
-                auth.currentUser.uid, 
-                detailedPlant,
-                observations
-              );
-            } catch (saveError) {
-              if (saveError instanceof Error) {
-                console.log("Save error:", saveError.message);
-              } else {
-                console.log("Save error:", saveError);
-              }
-            }
+        const result = await plantService.fetchPlantAndSave(
+          plantName as string,
+          (auth.currentUser as User).uid
+        );
+        if (result) {
+          setPlantInfo(result.plantData as PlantInfo);
+          setObservations(result.observations || []);
+          if (result.observations?.length > 0 && result.observations[0].location) {
+            setMapRegion({
+              latitude: result.observations[0].location[1],
+              longitude: result.observations[0].location[0],
+              latitudeDelta: 20,
+              longitudeDelta: 20,
+            });
           }
-          
-          if (obsData?.results?.length > 0) {
-            const firstObs = obsData.results[0];
-            if (firstObs.geojson?.coordinates) {
-              setMapRegion({
-                latitude: firstObs.geojson.coordinates[1],
-                longitude: firstObs.geojson.coordinates[0],
-                latitudeDelta: 20,
-                longitudeDelta: 20,
-              });
-            }
-          }
-          setLoadingMap(false);
         }
       } catch (error) {
         console.error('Load error:', error);
+      } finally {
         setLoadingMap(false);
       }
     };
+
     loadData();
   }, [plantName]);
 
   if (!plantInfo) {
     return (
       <View style={[styles.loadingContainer, { paddingTop: insets.top }]}>
-        <LinearGradient colors={['#2c6e49', '#4c956c']} style={StyleSheet.absoluteFillObject} />
+        <LinearGradient
+          colors={['#2c6e49', '#4c956c']}
+          style={StyleSheet.absoluteFillObject}
+        />
         <ActivityIndicator size="large" color="#ffffff" />
         <Text style={styles.loadingText}>Identifying plant...</Text>
       </View>
@@ -92,43 +95,28 @@ export default function PlantInfoScreen() {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
-      <LinearGradient colors={['#2c6e49', '#4c956c']} style={StyleSheet.absoluteFillObject} />
-      
-      <PlantHeader 
-        title={plantInfo.preferred_common_name || plantInfo.name}
+      <LinearGradient
+        colors={['#2c6e49', '#4c956c']}
+        style={StyleSheet.absoluteFillObject}
+      />
+      <PlantHeader
+        title={plantInfo.commonName || plantInfo.name}
         onBack={() => router.back()}
       />
-
       <ScrollView contentContainerStyle={styles.content}>
-        <PlantImageSection 
-          imageUrl={plantInfo.default_photo?.medium_url}
+        <PlantImageSection
+          imageUrl={plantInfo.defaultPhoto}
           scientificName={plantInfo.name}
-          commonName={plantInfo.preferred_common_name}
+          commonName={plantInfo.commonName}
         />
-
         <PlantOverview plantInfo={plantInfo} />
-
-        {plantInfo.taxon_photos?.length > 0 && (
-          <PlantGallery photos={plantInfo.taxon_photos} />
+        <PlantTaxonomy ancestors={plantInfo.taxonomy} currentSpecies={plantInfo.name} />
+        <PlantMap observations={observations} mapRegion={mapRegion} loading={loadingMap} />
+        {plantInfo.wikipediaSummary && (
+          <PlantDescription description={plantInfo.wikipediaSummary} />
         )}
-
-        <PlantTaxonomy 
-          ancestors={plantInfo.ancestors}
-          currentSpecies={plantInfo.name}
-        />
-
-        <PlantMap 
-          observations={observations}
-          mapRegion={mapRegion}
-          loading={loadingMap}
-        />
-
-        {plantInfo.wikipedia_summary && (
-          <PlantDescription description={plantInfo.wikipedia_summary} />
-        )}
-
-        {plantInfo.wikipedia_url && (
-          <ExternalLinks wikipediaUrl={plantInfo.wikipedia_url} />
+        {plantInfo.wikipediaUrl && (
+          <ExternalLinks wikipediaUrl={plantInfo.wikipediaUrl} />
         )}
       </ScrollView>
     </View>
@@ -136,21 +124,8 @@ export default function PlantInfoScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  content: {
-    padding: 16,
-    paddingBottom: 40,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    fontSize: 16,
-    color: '#ffffff',
-    marginTop: 16,
-  },
+  container: { flex: 1 },
+  content: { padding: 16, paddingBottom: 40 },
+  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  loadingText: { fontSize: 16, color: '#ffffff', marginTop: 16 },
 });
