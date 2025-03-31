@@ -4,10 +4,8 @@ import { Ionicons } from '@expo/vector-icons';
 import MapView, { Marker, Region } from 'react-native-maps';
 
 interface Observation {
-  geojson?: {
-    coordinates: number[];
-  };
-  observed_on: string;
+  location?: number[];
+  observedOn: string;
   user?: {
     login: string;
   };
@@ -30,24 +28,31 @@ const PlantMap: React.FC<PlantMapProps> = ({ observations, mapRegion, loading })
         </View>
       ) : (
         <View style={styles.mapContainer}>
-          <MapView style={styles.map} region={mapRegion}>
+          <MapView 
+            style={styles.map} 
+            region={mapRegion}
+            showsUserLocation={true}
+            showsMyLocationButton={true}
+          >
             {observations
-              .filter(obs => obs.geojson?.coordinates)
-              .map((obs, index) => (
-                <Marker
-                  key={index}
-                  coordinate={{
-                    latitude: obs.geojson!.coordinates[1],
-                    longitude: obs.geojson!.coordinates[0],
-                  }}
-                  title={`Observed: ${new Date(obs.observed_on).toLocaleDateString()}`}
-                  description={`By: ${obs.user?.login || 'Anonymous'}`}
-                >
-                  <View style={styles.markerContainer}>
-                    <Ionicons name="leaf" size={18} color="#ffffff" />
-                  </View>
-                </Marker>
-              ))}
+              .filter(obs => obs.location && obs.location.length >= 2)
+              .map((obs, index) => {
+                return (
+                  <Marker
+                    key={index}
+                    coordinate={{
+                      latitude: obs.location![1],
+                      longitude: obs.location![0],
+                    }}
+                    title={`Observed: ${new Date(obs.observedOn).toLocaleDateString()}`}
+                    description={`By: ${obs.user?.login || 'Anonymous'}`}
+                  >
+                    <View style={styles.markerContainer}>
+                      <Ionicons name="leaf" size={24} color="#ffffff" />
+                    </View>
+                  </Marker>
+                );
+              })}
           </MapView>
         </View>
       )}

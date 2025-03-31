@@ -12,16 +12,22 @@ export async function savePlantIdentification(userId, plantData, observations) {
     const plantRef = doc(db, 'plants', plantData.id.toString());
     const plantSnap = await getDoc(plantRef);
     if (!plantSnap.exists()) {
-      await setDoc(plantRef, {
-        id: plantData.id,
-        name: plantData.name,
-        commonName: plantData.preferred_common_name || '',
-        defaultPhoto: plantData.default_photo?.medium_url || '',
-        taxonomy: plantData.ancestors || [],
-        wikipediaSummary: plantData.wikipedia_summary || '',
-        wikipediaUrl: plantData.wikipedia_url || '',
-        createdAt: serverTimestamp(),
-      });
+        await setDoc(plantRef, {
+            id: plantData.id,
+            name: plantData.name,
+            commonName: plantData.preferred_common_name || '',
+            defaultPhoto: plantData.default_photo?.medium_url || '',
+            taxonomy: plantData.ancestors || [],
+            wikipediaSummary: plantData.wikipedia_summary || '',
+            wikipediaUrl: plantData.wikipedia_url || '',
+            extinct: plantData.extinct || false,
+            observationsCount: plantData.observations_count || 0,
+            conservationStatuses: plantData.conservation_statuses || [],
+            endemic: plantData.endemic || false,
+            nativeStatus: plantData.native_status || 'Unknown',
+            firstObservation: plantData.first_observation || 'Unknown',
+            createdAt: serverTimestamp(),
+          });                 
     }
 
     // Save a single observation document in the "observations" collection.

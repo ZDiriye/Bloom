@@ -25,6 +25,8 @@ class PlantService {
       
       // Use detailedData as the full plant info.
       const plantData = detailedData;
+
+      console.log('plantData', plantData);
       
       // Step 4: Save the plant data and the single observation document.
       await savePlantIdentification(userId, plantData, observations);
@@ -58,5 +60,5 @@ class PlantService {
     }
   }
 }
-
+//data is returning empty so it doesn't update when it returns return { plantData, observations };
 export const plantService = new PlantService();

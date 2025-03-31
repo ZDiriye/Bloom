@@ -9,12 +9,12 @@ interface PlantOverviewProps {
 const PlantOverview: React.FC<PlantOverviewProps> = ({ plantInfo }) => {
   const getPlantTraits = () => ({
     isExtinct: plantInfo?.extinct ? 'Extinct' : 'Not Extinct',
-    observations: plantInfo?.observations_count?.toLocaleString() || '0',
-    conservationStatus: plantInfo?.conservation_statuses?.[0]?.status || 'Not Assessed',
-    authority: plantInfo?.conservation_statuses?.[0]?.authority || 'N/A',
+    observations: plantInfo?.observationsCount?.toLocaleString() || '0',
+    conservationStatus: plantInfo?.conservationStatuses?.[0]?.status || 'Not Assessed',
+    authority: plantInfo?.conservationStatuses?.[0]?.authority || 'N/A',
     isEndemic: plantInfo?.endemic ? 'Endemic' : 'Not Endemic',
-    nativeStatus: plantInfo?.native_status || 'Unknown',
-    firstObserved: plantInfo?.first_observation?.substring(0, 4) || 'Unknown'
+    nativeStatus: plantInfo?.nativeStatus || 'Unknown',
+    firstObserved: plantInfo?.firstObservation?.substring(0, 4) || 'Unknown'
   });
 
   // Function to get conservation status color
@@ -23,7 +23,7 @@ const PlantOverview: React.FC<PlantOverviewProps> = ({ plantInfo }) => {
     
     switch(status) {
       case 'LC': return '#4caf50'; // Least Concern - Green
-      case 'NT': return '#8bc34a'; // Near Threatened - Light Green
+      case 'NT': return '#8bc34a'; // Near Threatened - Green
       case 'VU': return '#ffc107'; // Vulnerable - Yellow
       case 'EN': return '#ff9800'; // Endangered - Orange
       case 'CR': return '#f44336'; // Critically Endangered - Red
