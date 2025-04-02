@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { IdentifyPlantsCard } from '@/components/IdentifyPlants';
 import { RecentScans } from '@/components/RecentScans';
@@ -23,6 +23,9 @@ export default function IdentificationScreen() {
   return (
     <View style={[styles.container, { paddingTop: insets.top + 20, paddingBottom: insets.bottom }]}>
       <LinearGradient colors={['#2c6e49', '#4c956c']} style={StyleSheet.absoluteFillObject} />
+      <View style={styles.header}>
+        <Text style={styles.headerText}>Identify Plants</Text>
+      </View>
       <IdentifyPlantsCard
         onRequestCameraPermission={handleCameraPress}
         onPickImage={handlePickImagePress}
@@ -36,5 +39,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
+  },
+  header: {
+    marginBottom: 20,
+  },
+  headerText: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#ffffff',
   },
 });

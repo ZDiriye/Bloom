@@ -1,4 +1,5 @@
-import { View, StyleSheet, ScrollView, ActivityIndicator, Text } from 'react-native';
+// PlantInfoScreen.js
+import { View, StyleSheet, ScrollView, ActivityIndicator, Text, Image, Dimensions } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -8,8 +9,9 @@ import { auth } from '../../services/firebase';
 import { DocumentData } from 'firebase/firestore';
 import { User } from 'firebase/auth';
 import { Region } from 'react-native-maps';
+import { predictImage } from '../../utils/new_mlModel';
 
-// Import components
+// Import components (ensure these are correctly set up in your project)
 import PlantHeader from '../../components/plant_info/PlantHeader';
 import PlantImageSection from '../../components/plant_info/PlantImageSection';
 import PlantOverview from '../../components/plant_info/PlantOverview';
@@ -36,7 +38,7 @@ interface Observation {
 }
 
 export default function PlantInfoScreen() {
-  const { plantName } = useLocalSearchParams();
+  const { plantName, photoUri, isFrontCamera } = useLocalSearchParams();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [plantInfo, setPlantInfo] = useState<PlantInfo | null>(null);
@@ -48,61 +50,80 @@ export default function PlantInfoScreen() {
     longitudeDelta: 40,
   });
   const [loadingMap, setLoadingMap] = useState(true);
+  const [isProcessing, setIsProcessing] = useState(!!photoUri);
 
   useEffect(() => {
-    if (!plantName || !auth.currentUser) return;
+    if (!auth.currentUser) return;
 
     const loadData = async () => {
       try {
-        const result = await plantService.fetchPlantAndSave(
-          plantName as string,
-          (auth.currentUser as User).uid
-        );
-        if (result) {
-          setPlantInfo(result.plantData as PlantInfo);
-          setObservations(result.observations || []);
-          if (result.observations?.length > 0 && result.observations[0].location) {
-            setMapRegion({
-              latitude: result.observations[0].location[1],
-              longitude: result.observations[0].location[0],
-              latitudeDelta: 20,
-              longitudeDelta: 20,
-            });
-          }
+        if (photoUri) {
+          // Use the server-based prediction method.
+          const prediction = await predictImage(photoUri);
+          console.log('Prediction:', prediction);
+          // // Then fetch the plant info using the prediction result.
+          // const result = await plantService.fetchPlantAndSave(
+          //   prediction,
+          //   (auth.currentUser as User).uid
+          // );
+          // if (result) {
+          //   setPlantInfo(result.plantData as PlantInfo);
+          //   setObservations(result.observations || []);
+          //   if (result.observations?.length > 0 && result.observations[0].location) {
+          //     setMapRegion({
+          //       latitude: result.observations[0].location[1],
+          //       longitude: result.observations[0].location[0],
+          //       latitudeDelta: 20,
+          //       longitudeDelta: 20,
+          //     });
+          //   }
+          // }
+        // } else if (plantName) {
+        //   // Fetch plant info directly if you have a plant name.
+        //   const result = await plantService.fetchPlantAndSave(
+        //     plantName as string,
+        //     (auth.currentUser as User).uid
+        //   );
+        //   if (result) {
+        //     setPlantInfo(result.plantData as PlantInfo);
+        //     setObservations(result.observations || []);
+        //     if (result.observations?.length > 0 && result.observations[0].location) {
+        //       setMapRegion({
+        //         latitude: result.observations[0].location[1],
+        //         longitude: result.observations[0].location[0],
+        //         latitudeDelta: 20,
+        //         longitudeDelta: 20,
+        //       });
+        //     }
+        //   }
         }
       } catch (error) {
         console.error('Load error:', error);
       } finally {
         setLoadingMap(false);
+        setIsProcessing(false);
       }
     };
 
     loadData();
-  }, [plantName]);
+  }, [plantName, photoUri, isFrontCamera]);
 
-  if (!plantInfo) {
+  if (!plantInfo || isProcessing) {
     return (
       <View style={[styles.loadingContainer, { paddingTop: insets.top }]}>
-        <LinearGradient
-          colors={['#2c6e49', '#4c956c']}
-          style={StyleSheet.absoluteFillObject}
-        />
+        <LinearGradient colors={['#2c6e49', '#4c956c']} style={StyleSheet.absoluteFillObject} />
         <ActivityIndicator size="large" color="#ffffff" />
-        <Text style={styles.loadingText}>Identifying plant...</Text>
+        <Text style={styles.loadingText}>
+          {isProcessing ? 'Identifying plant...' : 'Loading plant information...'}
+        </Text>
       </View>
     );
   }
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
-      <LinearGradient
-        colors={['#2c6e49', '#4c956c']}
-        style={StyleSheet.absoluteFillObject}
-      />
-      <PlantHeader
-        title={plantInfo.commonName || plantInfo.name}
-        onBack={() => router.back()}
-      />
+      <LinearGradient colors={['#2c6e49', '#4c956c']} style={StyleSheet.absoluteFillObject} />
+      <PlantHeader title={plantInfo.commonName || plantInfo.name} onBack={() => router.back()} />
       <ScrollView contentContainerStyle={styles.content}>
         <PlantImageSection
           imageUrl={plantInfo.defaultPhoto}
@@ -112,12 +133,8 @@ export default function PlantInfoScreen() {
         <PlantOverview plantInfo={plantInfo} />
         <PlantTaxonomy ancestors={plantInfo.taxonomy} currentSpecies={plantInfo.name} />
         <PlantMap observations={observations} mapRegion={mapRegion} loading={loadingMap} />
-        {plantInfo.wikipediaSummary && (
-          <PlantDescription description={plantInfo.wikipediaSummary} />
-        )}
-        {plantInfo.wikipediaUrl && (
-          <ExternalLinks wikipediaUrl={plantInfo.wikipediaUrl} />
-        )}
+        {plantInfo.wikipediaSummary && <PlantDescription description={plantInfo.wikipediaSummary} />}
+        {plantInfo.wikipediaUrl && <ExternalLinks wikipediaUrl={plantInfo.wikipediaUrl} />}
       </ScrollView>
     </View>
   );

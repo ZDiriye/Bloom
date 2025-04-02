@@ -16,8 +16,6 @@ export function IdentifyPlantsCard({
 }: IdentifyPlantsCardProps) {
   return (
     <View style={styles.card}>
-      <ThemedText style={styles.title}>Identify Plants</ThemedText>
-
       <ThemedText style={styles.description}>
         Snap a photo to instantly identify hundreds of plant species
       </ThemedText>

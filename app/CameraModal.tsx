@@ -9,20 +9,16 @@ import {
   Platform, 
   SafeAreaView,
   Image,
-  Dimensions,
-  ActivityIndicator
+  Dimensions
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { predictImage } from '../utils/mlModel';
-
 
 export default function App() {
   const [facing, setFacing] = useState<CameraType>('back');
   const [flash, setFlash] = useState<'on' | 'off'>('off');
   const [permission, requestPermission] = useCameraPermissions();
   const [capturedPhoto, setCapturedPhoto] = useState<string | null>(null);
-  const [isProcessing, setIsProcessing] = useState(false);
   const cameraRef = useRef<CameraView>(null);
   const router = useRouter();
 
@@ -79,35 +75,14 @@ export default function App() {
 
   async function confirmPicture() {
     if (!capturedPhoto) return;
-  
-    setIsProcessing(true);
-    try {
-      const prediction = await predictImage(capturedPhoto, facing === 'front');
-      setIsProcessing(false);
-      setCapturedPhoto(null);
-      // Navigate to plant details screen with the prediction data
-      router.replace({
-        pathname: '/(tabs)/plant_info',
-        params: { 
-          plantName: prediction,
-          // You can add other prediction data here as needed
-        // confidence: prediction.confidence,
-        // etc.
+    
+    // Navigate to plant info screen with the photo and camera facing direction
+    router.replace({
+      pathname: '/(tabs)/plant_info',
+      params: { 
+        photoUri: capturedPhoto
       }
-      });
-    } catch (error) {
-      console.error('Prediction failed:', error);
-      setIsProcessing(false);
-    }
-  }
-  // Loading screen (fully opaque)
-  if (isProcessing) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#ffffff" />
-        <Text style={styles.processingText}>Processing photo...</Text>
-      </View>
-    );
+    });
   }
 
   // Photo preview screen
@@ -221,12 +196,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
   },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#000000', // Fully opaque black background
-  },
   message: {
     textAlign: 'center',
     paddingBottom: 20,
@@ -317,11 +286,5 @@ const styles = StyleSheet.create({
     color: 'white',
     marginTop: 5,
     fontSize: 16,
-  },
-  processingText: {
-    color: 'white',
-    fontSize: 18,
-    marginTop: 15,
-    fontWeight: '500',
-  },
+  }
 });
