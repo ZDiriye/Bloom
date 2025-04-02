@@ -1,5 +1,5 @@
 // PlantInfoScreen.js
-import { View, StyleSheet, ScrollView, ActivityIndicator, Text, Image, Dimensions } from 'react-native';
+import { View, StyleSheet, ScrollView, ActivityIndicator, Text } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -7,9 +7,9 @@ import { useEffect, useState } from 'react';
 import { plantService } from '../../services/plantService';
 import { auth } from '../../services/firebase';
 import { DocumentData } from 'firebase/firestore';
-import { User } from 'firebase/auth';
 import { Region } from 'react-native-maps';
 import { predictImage } from '../../utils/new_mlModel';
+import classNames from '../../assets/class_names.json';
 
 // Import components (ensure these are correctly set up in your project)
 import PlantHeader from '../../components/plant_info/PlantHeader';
@@ -21,12 +21,21 @@ import PlantDescription from '../../components/plant_info/PlantDescription';
 import ExternalLinks from '../../components/plant_info/ExternalLinks';
 
 interface PlantInfo extends DocumentData {
-  commonName?: string;
+  id: number;
   name: string;
+  commonName?: string;
   defaultPhoto?: string;
-  taxonomy?: any[];
+  extinct: boolean;
+  observationsCount: number;
+  conservationStatus: string;
+  endemic: boolean;
+  firstObservation: string;
   wikipediaSummary?: string;
   wikipediaUrl?: string;
+  taxonomy?: Array<{
+    rank: string;
+    name: string;
+  }>;
 }
 
 interface Observation {
@@ -46,11 +55,160 @@ export default function PlantInfoScreen() {
   const [mapRegion, setMapRegion] = useState<Region>({
     latitude: 0,
     longitude: 0,
-    latitudeDelta: 40,
-    longitudeDelta: 40,
+    latitudeDelta: 90,
+    longitudeDelta: 180,
   });
   const [loadingMap, setLoadingMap] = useState(true);
   const [isProcessing, setIsProcessing] = useState(!!photoUri);
+
+  const getPlantNameFromId = (plantId: string): string | null => {
+    const plantName = classNames[plantId as keyof typeof classNames];
+    if (!plantName) return null;
+    // Replace underscores with spaces and capitalize first letter
+    return plantName.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase());
+  };
+
+  // Compute a region that covers all observation coordinates
+  const computeMapRegion = (obs: Observation[]): Region => {
+    const validObs = obs.filter(o => o.location && o.location.length === 2);
+    if (validObs.length === 0) {
+      // Default to a reasonable view of the world
+      return {
+        latitude: 20,
+        longitude: 0,
+        latitudeDelta: 90,
+        longitudeDelta: 180,
+      };
+    }
+
+    try {
+      // Note: Assuming location is [longitude, latitude]
+      const lats = validObs.map(o => o.location![1]);
+      const lngs = validObs.map(o => o.location![0]);
+      
+      // Validate coordinates are within valid ranges
+      if (lats.some(lat => lat < -90 || lat > 90) || lngs.some(lng => lng < -180 || lng > 180)) {
+        return {
+          latitude: 20,
+          longitude: 0,
+          latitudeDelta: 90,
+          longitudeDelta: 180,
+        };
+      }
+
+      const minLat = Math.min(...lats);
+      const maxLat = Math.max(...lats);
+      const minLng = Math.min(...lngs);
+      const maxLng = Math.max(...lngs);
+      
+      const midLat = (minLat + maxLat) / 2;
+      const midLng = (minLng + maxLng) / 2;
+      
+      // Calculate deltas with padding and minimum values
+      const latPadding = 0.1; // 10% padding
+      const lngPadding = 0.1;
+      const minLatDelta = 0.0922; // Minimum zoom level
+      const minLngDelta = 0.0421;
+
+      const latitudeDelta = Math.max(
+        (maxLat - minLat) * (1 + latPadding),
+        minLatDelta
+      );
+      const longitudeDelta = Math.max(
+        (maxLng - minLng) * (1 + lngPadding),
+        minLngDelta
+      );
+
+      return {
+        latitude: midLat,
+        longitude: midLng,
+        latitudeDelta,
+        longitudeDelta,
+      };
+    } catch (error) {
+      console.error('Error computing map region:', error);
+      // Return default region if calculation fails
+      return {
+        latitude: 20,
+        longitude: 0,
+        latitudeDelta: 90,
+        longitudeDelta: 180,
+      };
+    }
+  };
+
+  // Function to calculate the most dense area of observations
+  const calculateDenseArea = (obs: Observation[]): Region => {
+    const validObs = obs.filter(o => o.location && o.location.length === 2);
+    if (validObs.length === 0) {
+      // Return default region if no valid observations
+      return {
+        latitude: 20,
+        longitude: 0,
+        latitudeDelta: 90,
+        longitudeDelta: 180,
+      };
+    }
+
+    try {
+      // Create a grid to count observations in each cell
+      const gridSize = 10; // Number of cells in each dimension
+      const grid: { [key: string]: number } = {};
+      
+      const lats = validObs.map(o => o.location![1]);
+      const lngs = validObs.map(o => o.location![0]);
+      
+      const minLat = Math.min(...lats);
+      const maxLat = Math.max(...lats);
+      const minLng = Math.min(...lngs);
+      const maxLng = Math.max(...lngs);
+      
+      const latStep = (maxLat - minLat) / gridSize;
+      const lngStep = (maxLng - minLng) / gridSize;
+
+      // Count observations in each grid cell
+      validObs.forEach(obs => {
+        const lat = obs.location![1];
+        const lng = obs.location![0];
+        const latIndex = Math.floor((lat - minLat) / latStep);
+        const lngIndex = Math.floor((lng - minLng) / lngStep);
+        const key = `${latIndex},${lngIndex}`;
+        grid[key] = (grid[key] || 0) + 1;
+      });
+
+      // Find the cell with the most observations
+      let maxCount = 0;
+      let densestCell = '0,0';
+      Object.entries(grid).forEach(([key, count]) => {
+        if (count > maxCount) {
+          maxCount = count;
+          densestCell = key;
+        }
+      });
+
+      // Convert grid cell back to coordinates
+      const [latIndex, lngIndex] = densestCell.split(',').map(Number);
+      const centerLat = minLat + (latIndex + 0.5) * latStep;
+      const centerLng = minLng + (lngIndex + 0.5) * lngStep;
+
+      // Return a region centered on the densest area with appropriate zoom
+      return {
+        latitude: centerLat,
+        longitude: centerLng,
+        latitudeDelta: latStep * 2, // Show 2 cells worth of area
+        longitudeDelta: lngStep * 2,
+      };
+    } catch (error) {
+      console.error('Error calculating dense area:', error);
+      // Return default region if calculation fails
+      return {
+        latitude: 20,
+        longitude: 0,
+        latitudeDelta: 90,
+        longitudeDelta: 180,
+      };
+    }
+  };
 
   useEffect(() => {
     if (!auth.currentUser) return;
@@ -61,41 +219,56 @@ export default function PlantInfoScreen() {
           // Use the server-based prediction method.
           const prediction = await predictImage(photoUri);
           console.log('Prediction:', prediction);
-          // // Then fetch the plant info using the prediction result.
-          // const result = await plantService.fetchPlantAndSave(
-          //   prediction,
-          //   (auth.currentUser as User).uid
-          // );
-          // if (result) {
-          //   setPlantInfo(result.plantData as PlantInfo);
-          //   setObservations(result.observations || []);
-          //   if (result.observations?.length > 0 && result.observations[0].location) {
-          //     setMapRegion({
-          //       latitude: result.observations[0].location[1],
-          //       longitude: result.observations[0].location[0],
-          //       latitudeDelta: 20,
-          //       longitudeDelta: 20,
-          //     });
-          //   }
-          // }
-        // } else if (plantName) {
-        //   // Fetch plant info directly if you have a plant name.
-        //   const result = await plantService.fetchPlantAndSave(
-        //     plantName as string,
-        //     (auth.currentUser as User).uid
-        //   );
-        //   if (result) {
-        //     setPlantInfo(result.plantData as PlantInfo);
-        //     setObservations(result.observations || []);
-        //     if (result.observations?.length > 0 && result.observations[0].location) {
-        //       setMapRegion({
-        //         latitude: result.observations[0].location[1],
-        //         longitude: result.observations[0].location[0],
-        //         latitudeDelta: 20,
-        //         longitudeDelta: 20,
-        //       });
-        //     }
-        //   }
+          
+          // Get the plant name from the ID using class_names.json
+          const plantName = getPlantNameFromId(prediction.plant_id);
+          if (!plantName) {
+            throw new Error('Could not find plant name for ID: ' + prediction.plant_id);
+          }
+
+          // Fetch plant info using the plant name
+          const result = await plantService.fetchPlantAndSave(
+            plantName,
+            (auth.currentUser as any).uid
+          );
+          if (result) {
+            setPlantInfo(result.plantData as PlantInfo);
+            setObservations(result.observations || []);
+            
+            // First set the initial map region
+            setMapRegion(computeMapRegion(result.observations || []));
+            
+            // Then calculate and set the dense area if available
+            const denseArea = calculateDenseArea(result.observations || []);
+            if (denseArea) {
+              // Use setTimeout to ensure the initial region is set first
+              setTimeout(() => {
+                setMapRegion(denseArea);
+              }, 1000);
+            }
+          }
+        } else if (plantName) {
+          // Fetch plant info directly if you have a plant name.
+          const result = await plantService.fetchPlantAndSave(
+            plantName as string,
+            (auth.currentUser as any).uid
+          );
+          if (result) {
+            setPlantInfo(result.plantData as PlantInfo);
+            setObservations(result.observations || []);
+            
+            // First set the initial map region
+            setMapRegion(computeMapRegion(result.observations || []));
+            
+            // Then calculate and set the dense area if available
+            const denseArea = calculateDenseArea(result.observations || []);
+            if (denseArea) {
+              // Use setTimeout to ensure the initial region is set first
+              setTimeout(() => {
+                setMapRegion(denseArea);
+              }, 1000);
+            }
+          }
         }
       } catch (error) {
         console.error('Load error:', error);

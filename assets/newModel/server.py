@@ -1,51 +1,56 @@
 import io
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageOps
 from flask import Flask, request, jsonify
+# from flask_cors import CORS
 import tensorflow as tf
 
 app = Flask(__name__)
+# CORS(app)  # Enable CORS
 
 # Load the TFLite model and allocate tensors.
 interpreter = tf.lite.Interpreter(model_path="model.tflite")
 interpreter.allocate_tensors()
-# After loading the model
-print(interpreter.get_signature_list())  # Inspect input/output signatures
-# Get input and output details.
+
+print(interpreter.get_signature_list())  # Inspect signatures
+
 input_details = interpreter.get_input_details()
 output_details = interpreter.get_output_details()
 
+top_class_ids = [
+  "1363227", "1392475", "1356022", "1364099", "1355937", "1359517", "1357330",
+  "1358752", "1359620", "1363128", "1363991", "1355936", "1394460", "1363740",
+  "1394994", "1364173", "1359616", "1364164", "1361824", "1361823", "1397364",
+  "1358095", "1363130", "1389510", "1374048", "1367432", "1409238", "1397268",
+  "1393614", "1356781", "1369887", "1393241", "1394420", "1398178", "1408774",
+  "1435714", "1394591", "1385937", "1355932", "1358094", "1393425", "1393423",
+  "1398592", "1408961", "1358133", "1358766", "1361656", "1384485", "1356257",
+  "1358689", "1394382", "1359498", "1362490", "1357635", "1355990", "1363336",
+  "1396824", "1400100", "1418146", "1356075", "1356382", "1360978", "1363764",
+  "1394454", "1364159", "1393393", "1362294", "1369960", "1409295", "1359669",
+  "1355978", "1391483", "1394404", "1398515", "1356111", "1360671", "1391192",
+  "1390637", "1359625", "1364172", "1360998", "1391652", "1360588", "1358605",
+  "1359488", "1361759", "1356126", "1391226", "1360153", "1398128", "1358751",
+  "1360590", "1359485", "1394489", "1393792", "1363737", "1358105", "1421021",
+  "1357677", "1363749"
+]
 
-# For example, assume the model expects input shape [1, height, width, channels]
 input_shape = input_details[0]['shape']  # e.g., [1, 224, 224, 3]
 
-from PIL import ImageOps  # Add this import at the top
-
 def preprocess_image(image, target_size):
-    # Fix EXIF orientation
     image = ImageOps.exif_transpose(image)
-    
-    # Resize image to target size
     image = image.resize(target_size)
-    
-    # Convert to numpy array
     image_array = np.array(image)
-    
-    # Remove alpha channel if present
     if image_array.shape[-1] == 4:
         image_array = image_array[..., :3]
-    
-    # Add batch dimension
     image_array = np.expand_dims(image_array, axis=0)
-    
-    # Use EfficientNet-specific preprocessing
     image_array = tf.keras.applications.efficientnet.preprocess_input(image_array)
-
+    
     print(f"Preprocessed array shape: {image_array.shape}")
     print(f"Pixel range: {np.min(image_array)} - {np.max(image_array)}")
     print(f"Sample values (R channel): {image_array[0,100:105,100:105,0]}")
     
-    return image_array.astype(np.float32)  # Ensure float32 type
+    return image_array.astype(np.float32)
 
 @app.route('/predict', methods=['POST'])
 def predict():
@@ -55,28 +60,26 @@ def predict():
     file = request.files['image']
     try:
         image = Image.open(file.stream)
-        # Convert to RGB only if not in RGB mode (don't force it)
         if image.mode != 'RGB':
             image = image.convert('RGB')
     except Exception as e:
         return jsonify({'error': 'Invalid image'}), 400
 
-    # Get target size from model input shape
     target_size = (input_shape[1], input_shape[2])
     input_data = preprocess_image(image, target_size)
 
-    # Run inference
     interpreter.set_tensor(input_details[0]['index'], input_data)
     interpreter.invoke()
     output_data = interpreter.get_tensor(output_details[0]['index'])
 
-    # Postprocess output (for classification, get the predicted class and probability)
     predicted_class = int(np.argmax(output_data))
     probability = float(np.max(output_data))
-    
-    print(f"Predicted class: {predicted_class}, Probability: {probability}")
+    plant_id = top_class_ids[predicted_class]
 
-    return jsonify({'predicted_class': predicted_class, 'probability': probability})
+    print(f"Predicted class: {predicted_class}, Probability: {probability}")
+    print(f"Plant ID: {plant_id}")
+    
+    return jsonify({'plant_id': plant_id, 'probability': probability})
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)

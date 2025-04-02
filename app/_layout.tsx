@@ -5,8 +5,6 @@ import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import 'react-native-reanimated';
-import '@tensorflow/tfjs-react-native';
-import * as tf from '@tensorflow/tfjs';
 
 import { useColorScheme } from '@/hooks/useColorScheme';
 
@@ -18,15 +16,6 @@ export default function RootLayout() {
   const [loaded] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
   });
-
-  useEffect(() => {
-    const initTensorFlow = async () => {
-      await tf.ready();
-      console.log('TensorFlow.js backend initialised');
-    };
-    
-    initTensorFlow();
-  }, []);
 
   useEffect(() => {
     if (loaded) {

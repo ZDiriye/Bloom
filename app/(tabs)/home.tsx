@@ -11,7 +11,7 @@ import {
 import { useRouter, Stack } from 'expo-router';
 import { auth } from '../../services/firebase';
 import { plantService } from '../../services/plantService';
-import { IdentificationCard } from '../../components/IdentificationCard';
+import { IdentificationCard } from '../../components/home/IdentificationCard';
 import { DocumentData, Timestamp } from 'firebase/firestore';
 import { LinearGradient } from 'expo-linear-gradient';
 
@@ -106,6 +106,8 @@ export default function HomeScreen() {
                 commonName: item.plantData?.commonName,
                 photoUrl: item.plantData?.defaultPhoto,
                 timestamp: date,
+                description: item.plantData?.wikipediaSummary,
+                conservationStatus: item.plantData?.conservationStatus,
                 user: {
                   displayName: item.userData?.displayName || 'User',
                   photoURL: item.userData?.photoURL,

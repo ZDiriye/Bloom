@@ -1,32 +1,47 @@
 // utils/mlModel.js
 export async function predictImage(imageUri) {
-    // Create a FormData object and add the image.
     let formData = new FormData();
     formData.append('image', {
       uri: imageUri,
-      name: 'photo.jpg', // A simple name for the file
-      type: 'image/jpeg'
+      name: 'photo.jpg',
+      type: 'image/jpeg',
     });
   
     try {
-      // Using the local IP address for the server
+      // Add a timeout to the fetch request
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+  
       const response = await fetch('http://192.168.1.162:5000/predict', {
         method: 'POST',
         body: formData,
+        signal: controller.signal,
       });
   
-      // Check if the response status is OK
+      clearTimeout(timeoutId);
+  
       if (!response.ok) {
         const text = await response.text();
         console.error('Server error response:', text);
-        throw new Error(`Server returned ${response.status}`);
+        throw new Error(`Server returned ${response.status}: ${text}`);
       }
   
-      // Attempt to parse JSON
       const json = await response.json();
-      return json.predicted_class;
+      
+      // Validate the response
+      if (!json || typeof json.plant_id !== 'string' || typeof json.probability !== 'number') {
+        throw new Error('Invalid response from server');
+      }
+  
+      return json;
     } catch (error) {
       console.error('Error in predictImage:', error);
+      if (error.name === 'AbortError') {
+        throw new Error('Request timed out. Please try again.');
+      }
+      if (error.message.includes('Network request failed')) {
+        throw new Error('Could not connect to the server. Please check your internet connection.');
+      }
       throw error;
     }
   }

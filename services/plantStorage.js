@@ -22,9 +22,8 @@ export async function savePlantIdentification(userId, plantData, observations) {
             wikipediaUrl: plantData.wikipedia_url || '',
             extinct: plantData.extinct || false,
             observationsCount: plantData.observations_count || 0,
-            conservationStatuses: plantData.conservation_statuses || [],
+            conservationStatus: plantData.conservation_status?.status || 'Not Evaluated',
             endemic: plantData.endemic || false,
-            nativeStatus: plantData.native_status || 'Unknown',
             firstObservation: plantData.first_observation || 'Unknown',
             createdAt: serverTimestamp(),
           });                 

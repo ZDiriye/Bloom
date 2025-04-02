@@ -15,9 +15,7 @@ export default function IdentificationScreen() {
   };
 
   const handlePickImagePress = async () => {
-    // Removed permission check for image picker
-    // Navigate or handle the image picking directly
-    //router.push('../ImagePickerModal');
+    router.push('../ImagePickerModal');
   };
 
   return (
