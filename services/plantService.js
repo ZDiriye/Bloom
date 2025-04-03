@@ -10,6 +10,7 @@ import {
   limit
 } from 'firebase/firestore';
 import { savePlantIdentification } from './plantStorage';
+import { auth } from './firebase';
 
 class PlantService {
   async fetchPlantAndSave(plantName, userId) {
@@ -139,6 +140,50 @@ class PlantService {
       throw error;
     }
   }
+  // recent scans on the identification screen
+  async getRecentScans(limitCount = 5) {
+    try {
+      if (!auth.currentUser) {
+        throw new Error('User must be authenticated to get recent scans');
+      }
+  
+      const userId = auth.currentUser.uid;
+      const observationsQuery = query(
+        collection(db, 'observations'),
+        orderBy('createdAt', 'desc'),
+        limit(limitCount) 
+      );
+  
+      const snapshot = await getDocs(observationsQuery);
+      const userScans = snapshot.docs
+        .filter(doc => doc.data().userId === userId)
+        .map(doc => ({
+          id: doc.id,
+          createdAt: doc.data().createdAt,
+          ...doc.data()
+        }));
+  
+      const scansWithPlantData = await Promise.all(
+        userScans.map(async (scan) => {
+          if (!scan.plantId) {
+            console.warn(`Scan ${scan.id} missing plantId`);
+            return { ...scan, plantData: null };
+          }
+          const plantRef = doc(db, 'plants', scan.plantId.toString());
+          const plantDoc = await getDoc(plantRef);
+          return {
+            ...scan,
+            plantData: plantDoc.exists() ? plantDoc.data() : null,
+          };
+        })
+      );
+  
+      return scansWithPlantData;
+    } catch (error) {
+      console.error('getRecentScans error:', error);
+      throw error;
+    }
+  }  
 }
 
 export const plantService = new PlantService();

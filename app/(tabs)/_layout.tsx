@@ -30,19 +30,19 @@ export default function TabLayout() {
         tabBarShowLabel: true,
       }}>
       <Tabs.Screen
-        name="identification"
-        options={{
-          title: 'Identify',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="camera.fill" color={color} />,
-          tabBarLabel: 'Identify',
-        }}
-      />
-      <Tabs.Screen
         name="home"
         options={{
           title: 'Home',
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
           tabBarLabel: 'Home',
+        }}
+      />
+      <Tabs.Screen
+        name="identification"
+        options={{
+          title: 'Identify',
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="camera.fill" color={color} />,
+          tabBarLabel: 'Identify',
         }}
       />
       <Tabs.Screen

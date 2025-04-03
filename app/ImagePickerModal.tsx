@@ -1,12 +1,13 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { 
   StyleSheet, 
   Text, 
   TouchableOpacity, 
   View, 
-  Image,
-  Platform,
+  StatusBar, 
+  Platform, 
   SafeAreaView,
+  Image,
   Dimensions
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -17,7 +18,7 @@ export default function ImagePickerModal() {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const router = useRouter();
 
-  const pickImage = async () => {
+  async function pickImage() {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
@@ -28,26 +29,27 @@ export default function ImagePickerModal() {
     if (!result.canceled) {
       setSelectedImage(result.assets[0].uri);
     }
-  };
+  }
 
-  const closePicker = () => {
+  function closePicker() {
     router.back();
-  };
+  }
 
-  const retakePicture = () => {
+  function retakePicture() {
     setSelectedImage(null);
-  };
+  }
 
-  const confirmPicture = () => {
+  async function confirmPicture() {
     if (!selectedImage) return;
     
+    // Navigate to plant info screen with the selected image
     router.replace({
       pathname: '/(tabs)/plant_info',
       params: { 
         photoUri: selectedImage
       }
     });
-  };
+  }
 
   // Image preview screen
   if (selectedImage) {
@@ -100,14 +102,20 @@ export default function ImagePickerModal() {
         </SafeAreaView>
 
         <View style={styles.centerContent}>
+          <Ionicons name="images" size={120} color="#4c956c" style={styles.icon} />
+          <Text style={styles.title}>Choose a Photo</Text>
+          <Text style={styles.subtitle}>Select an image from your library to identify the plant</Text>
+        </View>
+
+        <SafeAreaView style={styles.bottomControls}>
           <TouchableOpacity 
             style={styles.pickButton} 
             onPress={pickImage}
           >
-            <Ionicons name="images" size={48} color="white" />
-            <Text style={styles.pickButtonText}>Choose from Library</Text>
+            <Ionicons name="folder-open" size={24} color="white" />
+            <Text style={styles.pickButtonText}>Open Library</Text>
           </TouchableOpacity>
-        </View>
+        </SafeAreaView>
       </View>
     </View>
   );
@@ -121,6 +129,7 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     backgroundColor: 'transparent',
+    justifyContent: 'space-between',
   },
   header: {
     flexDirection: 'row',
@@ -140,19 +149,40 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    paddingHorizontal: 20,
+  },
+  icon: {
+    marginBottom: 20,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: 'white',
+    marginBottom: 10,
+  },
+  subtitle: {
+    fontSize: 16,
+    color: 'rgba(255,255,255,0.7)',
+    textAlign: 'center',
+    paddingHorizontal: 20,
+  },
+  bottomControls: {
+    paddingHorizontal: 20,
+    paddingBottom: Platform.OS === 'ios' ? 30 : 20,
   },
   pickButton: {
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    borderRadius: 20,
-    padding: 20,
+    backgroundColor: '#4c956c',
+    flexDirection: 'row',
     alignItems: 'center',
-    width: '80%',
+    justifyContent: 'center',
+    paddingVertical: 15,
+    borderRadius: 10,
   },
   pickButtonText: {
     color: 'white',
     fontSize: 18,
-    marginTop: 10,
+    fontWeight: '600',
+    marginLeft: 10,
   },
   previewImage: {
     ...StyleSheet.absoluteFillObject,

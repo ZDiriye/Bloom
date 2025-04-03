@@ -69,13 +69,21 @@ export default function HomeScreen() {
         </View>
         <View style={styles.emptyContent}>
           <Text style={styles.emptyTitle}>No Identifications Yet!</Text>
-          <Text style={styles.emptySubtitle}>Be the first to identify a plant.</Text>
-          <TouchableOpacity
-            style={styles.emptyButton}
-            onPress={() => router.push('../CameraModal')}
-          >
-            <Text style={styles.emptyButtonText}>Take a Photo</Text>
-          </TouchableOpacity>
+          <Text style={styles.emptySubtitle}>Start identifying plants by taking a photo or choosing from your library.</Text>
+          <View style={styles.emptyButtonsContainer}>
+            <TouchableOpacity
+              style={[styles.emptyButton, styles.primaryButton]}
+              onPress={() => router.push('../CameraModal')}
+            >
+              <Text style={styles.emptyButtonText}>Take a Photo</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.emptyButton, styles.secondaryButton]}
+              onPress={() => router.push('../ImagePickerModal')}
+            >
+              <Text style={[styles.emptyButtonText, styles.secondaryButtonText]}>Choose from Library</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </SafeAreaView>
     );
@@ -160,19 +168,35 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     opacity: 0.8,
   },
+  emptyButtonsContainer: {
+    width: '100%',
+    maxWidth: 300,
+    gap: 12,
+  },
   emptyButton: {
-    backgroundColor: '#ffffff',
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 8,
+    alignItems: 'center',
+  },
+  primaryButton: {
+    backgroundColor: '#ffffff',
+  },
+  secondaryButton: {
+    backgroundColor: 'transparent',
+    borderWidth: 2,
+    borderColor: '#ffffff',
   },
   emptyButtonText: {
     color: '#2c6e49',
     fontSize: 16,
     fontWeight: '600',
   },
+  secondaryButtonText: {
+    color: '#ffffff',
+  },
   listContentContainer: {
     paddingHorizontal: 16,
-    paddingBottom: 16,
+    paddingBottom: 100,
   },
 });

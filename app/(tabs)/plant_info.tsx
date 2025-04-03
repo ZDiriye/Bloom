@@ -215,6 +215,7 @@ export default function PlantInfoScreen() {
 
     const loadData = async () => {
       try {
+        setIsProcessing(true); // Set processing state to true when starting to load data
         if (photoUri) {
           // Use the server-based prediction method.
           const prediction = await predictImage(photoUri);
@@ -247,7 +248,7 @@ export default function PlantInfoScreen() {
               }, 1000);
             }
           }
-        } else if (plantName) {
+        } else {
           // Fetch plant info directly if you have a plant name.
           const result = await plantService.fetchPlantAndSave(
             plantName as string,
@@ -287,7 +288,7 @@ export default function PlantInfoScreen() {
         <LinearGradient colors={['#2c6e49', '#4c956c']} style={StyleSheet.absoluteFillObject} />
         <ActivityIndicator size="large" color="#ffffff" />
         <Text style={styles.loadingText}>
-          {isProcessing ? 'Identifying plant...' : 'Loading plant information...'}
+          {isProcessing && photoUri ? 'Identifying plant...' : 'Loading plant information...'}
         </Text>
       </View>
     );
@@ -296,7 +297,7 @@ export default function PlantInfoScreen() {
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <LinearGradient colors={['#2c6e49', '#4c956c']} style={StyleSheet.absoluteFillObject} />
-      <PlantHeader title={plantInfo.commonName || plantInfo.name} onBack={() => router.back()} />
+      <PlantHeader title={plantInfo.name} onBack={() => router.back()} />
       <ScrollView contentContainerStyle={styles.content}>
         <PlantImageSection
           imageUrl={plantInfo.defaultPhoto}
