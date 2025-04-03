@@ -8,7 +8,8 @@ import {
   getDocs,
   orderBy,
   limit,
-  setDoc
+  setDoc,
+  where
 } from 'firebase/firestore';
 import { savePlantIdentification } from './plantStorage';
 import { auth } from './firebase';

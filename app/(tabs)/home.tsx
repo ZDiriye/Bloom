@@ -6,7 +6,8 @@ import {
   Text,
   FlatList,
   ActivityIndicator,
-  TouchableOpacity
+  TouchableOpacity,
+  RefreshControl
 } from 'react-native';
 import { useRouter, Stack } from 'expo-router';
 import { auth } from '../../services/firebase';
@@ -27,6 +28,7 @@ export default function HomeScreen() {
   const user = auth.currentUser;
   const [observations, setObservations] = useState<Observation[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -42,19 +44,41 @@ export default function HomeScreen() {
         console.error('Error loading observations:', error);
       } finally {
         setLoading(false);
+        setRefreshing(false);
       }
     }
     loadObservations();
   }, [user]);
 
+  const fetchObservations = async () => {
+    try {
+      const data = await plantService.getFullObservations();
+      setObservations(data);
+    } catch (error) {
+      console.error('Error fetching observations:', error);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  const onRefresh = React.useCallback(() => {
+    setRefreshing(true);
+    fetchObservations();
+  }, []);
+
   if (!user) {
     return null;
   }
 
-  if (loading) {
+  if (loading && !refreshing) {
     return (
-      <SafeAreaView style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#2c6e49" />
+      <SafeAreaView style={styles.container}>
+        <Stack.Screen options={{ headerShown: false }} />
+        <LinearGradient colors={['#2c6e49', '#4c956c']} style={StyleSheet.absoluteFillObject} />
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#ffffff" />
+        </View>
       </SafeAreaView>
     );
   }
@@ -101,6 +125,15 @@ export default function HomeScreen() {
         data={observations}
         contentContainerStyle={styles.listContentContainer}
         keyExtractor={(item) => item.id}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor="#ffffff"
+            colors={['#ffffff']}
+            progressBackgroundColor="#4c956c"
+          />
+        }
         renderItem={({ item }) => {
           const date = item.createdAt?.toDate
             ? item.createdAt.toDate()
@@ -111,11 +144,9 @@ export default function HomeScreen() {
               identification={{
                 id: item.id,
                 plantName: item.plantData?.name || 'Unknown',
-                commonName: item.plantData?.commonName,
                 photoUrl: item.plantData?.defaultPhoto,
                 timestamp: date,
                 description: item.plantData?.wikipediaSummary,
-                conservationStatus: item.plantData?.conservationStatus,
                 user: {
                   displayName: item.userData?.displayName || 'User',
                   photoURL: item.userData?.photoURL,
