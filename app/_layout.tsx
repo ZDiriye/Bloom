@@ -32,14 +32,12 @@ export default function RootLayout() {
       <Stack
         screenOptions={{
           headerShown: false,
-          animation: 'slide_from_right',
         }}
       >
         <Stack.Screen 
           name="(tabs)" 
           options={{ 
             headerShown: false,
-            animation: 'none'
           }} 
         />
         <Stack.Screen 
@@ -47,7 +45,6 @@ export default function RootLayout() {
           options={{ 
             headerShown: false,
             presentation: 'fullScreenModal',
-            animation: 'slide_from_bottom'
           }} 
         />
         <Stack.Screen 
@@ -55,27 +52,24 @@ export default function RootLayout() {
           options={{ 
             headerShown: false,
             presentation: 'fullScreenModal',
-            animation: 'slide_from_bottom'
           }} 
         />
         <Stack.Screen 
           name="register" 
           options={{ 
             headerShown: false,
-            animation: 'slide_from_right'
           }} 
         />
         <Stack.Screen 
           name="login" 
           options={{ 
             headerShown: false,
-            animation: 'slide_from_right'
           }} 
         />
         <Stack.Screen 
           name="+not-found" 
           options={{
-            animation: 'slide_from_right'
+            headerShown: false,
           }}
         />
       </Stack>

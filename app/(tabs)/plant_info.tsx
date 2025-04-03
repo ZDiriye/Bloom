@@ -70,7 +70,11 @@ export default function PlantInfoScreen() {
 
   // Compute a region that covers all observation coordinates
   const computeMapRegion = (obs: Observation[]): Region => {
-    const validObs = obs.filter(o => o.location && o.location.length === 2);
+    const validObs = obs.filter(o => o.location && o.location.length === 2 && 
+      typeof o.location[0] === 'number' && typeof o.location[1] === 'number' &&
+      o.location[0] >= -180 && o.location[0] <= 180 &&
+      o.location[1] >= -90 && o.location[1] <= 90);
+
     if (validObs.length === 0) {
       // Default to a reasonable view of the world
       return {
@@ -86,16 +90,6 @@ export default function PlantInfoScreen() {
       const lats = validObs.map(o => o.location![1]);
       const lngs = validObs.map(o => o.location![0]);
       
-      // Validate coordinates are within valid ranges
-      if (lats.some(lat => lat < -90 || lat > 90) || lngs.some(lng => lng < -180 || lng > 180)) {
-        return {
-          latitude: 20,
-          longitude: 0,
-          latitudeDelta: 90,
-          longitudeDelta: 180,
-        };
-      }
-
       const minLat = Math.min(...lats);
       const maxLat = Math.max(...lats);
       const minLng = Math.min(...lngs);

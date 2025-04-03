@@ -48,11 +48,18 @@ export default function TabLayout() {
       <Tabs.Screen
         name="plant_info"
         options={{
-          title: 'Plant Info',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="leaf.fill" color={color} />,
-          tabBarLabel: 'Plant Info',
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="leaderboard"
+        options={{
+          title: 'Leaderboard',
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="trophy.fill" color={color} />,
+          tabBarLabel: 'Leaderboard',
         }}
       />
     </Tabs>
+    
   );
 }

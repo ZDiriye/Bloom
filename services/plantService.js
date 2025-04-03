@@ -7,7 +7,8 @@ import {
   query,
   getDocs,
   orderBy,
-  limit
+  limit,
+  setDoc
 } from 'firebase/firestore';
 import { savePlantIdentification } from './plantStorage';
 import { auth } from './firebase';
@@ -40,17 +41,8 @@ class PlantService {
       if (!detailedData) {
         throw new Error('Failed to fetch plant details');
       }
-
-      // Debug logging to inspect the API response
-      console.log('API Response - Conservation Status:', {
-        conservation_status: detailedData.conservation_status?.status,
-        full_conservation_status: detailedData.conservation_status,
-        raw_data: JSON.stringify(detailedData, null, 2)
-      });
-
-      // Set conservation status directly from the API response
-      detailedData.conservationStatus = detailedData.conservation_status?.status || 'Not Evaluated';
-      console.log('Using Conservation Status:', detailedData.conservationStatus);
+      
+      await this.updateUserXP(userId, detailedData.observations_count);
 
       const observations = obsData?.results || [];
       await savePlantIdentification(userId, detailedData, observations);
@@ -183,7 +175,45 @@ class PlantService {
       console.error('getRecentScans error:', error);
       throw error;
     }
-  }  
+  }
+
+  async updateUserXP(userId, observationsCount) {
+    let xpReward = 0;
+    if (observationsCount < 50000) {
+      xpReward = 100;
+    } else if (observationsCount < 150000) {
+      xpReward = 50;
+    } else {
+      xpReward = 20;
+    }
+    
+    // Fetch current xp (assuming you store xp in the user's document)
+    const userRef = doc(db, 'users', userId);
+    const userSnap = await getDoc(userRef);
+    const currentXP = userSnap.exists() ? userSnap.data().xp || 0 : 0;
+    
+    // Update the user's xp field
+    await setDoc(userRef, { xp: currentXP + xpReward }, { merge: true });
+  }
+
+  async getTopUsersByXP(limitCount = 10) {
+    try {
+      const usersQuery = query(
+        collection(db, 'users'),
+        orderBy('xp', 'desc'),
+        limit(limitCount)
+      );
+      
+      const snapshot = await getDocs(usersQuery);
+      return snapshot.docs.map(doc => ({
+        userId: doc.id,
+        ...doc.data()
+      }));
+    } catch (error) {
+      console.error('getTopUsersByXP error:', error);
+      throw error;
+    }
+  }
 }
 
 export const plantService = new PlantService();

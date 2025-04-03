@@ -87,7 +87,7 @@ export function RecentScans() {
             />
             <View style={styles.scanInfo}>
               <Text style={styles.plantName} numberOfLines={1}>
-                {scan.plantData?.commonName || scan.plantData?.name}
+                {scan.plantData?.name}
               </Text>
               <Text style={styles.scanDate}>
                 {new Date(scan.createdAt.toDate()).toLocaleDateString()}

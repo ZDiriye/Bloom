@@ -19,16 +19,16 @@ export default function IdentificationScreen() {
   };
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top + 20 }]}>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
       <LinearGradient colors={['#2c6e49', '#4c956c']} style={StyleSheet.absoluteFillObject} />
-      <ScrollView 
+      <View style={styles.header}>
+        <Text style={styles.headerText}>Identify Plants</Text>
+      </View>
+      <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.header}>
-          <Text style={styles.headerText}>Identify Plants</Text>
-        </View>
         <IdentifyPlantsCard
           onRequestCameraPermission={handleCameraPress}
           onPickImage={handlePickImagePress}
@@ -47,10 +47,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    padding: 20,
+    paddingHorizontal: 16,
     paddingBottom: 100,
   },
   header: {
+    paddingHorizontal: 20,
+    paddingTop: 20,
     marginBottom: 20,
   },
   headerText: {

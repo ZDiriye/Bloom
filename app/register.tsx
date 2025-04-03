@@ -42,7 +42,8 @@ export default function RegisterScreen() {
         displayName: displayName.trim(),
         createdAt: serverTimestamp(),
         role: 'user',
-        profilePic: ''
+        profilePic: '',
+        xp: 0
       });
 
       // 3. Redirect to home screen with animation

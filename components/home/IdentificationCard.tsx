@@ -11,7 +11,6 @@ interface IdentificationCardProps {
     photoUrl: string;
     timestamp: Date;
     description?: string;
-    conservationStatus?: string;
     user: {
       displayName: string;
       photoURL?: string;
@@ -21,23 +20,6 @@ interface IdentificationCardProps {
 
 export function IdentificationCard({ identification }: IdentificationCardProps) {
   const router = useRouter();
-
-  const getConservationStatusColor = (status: string | undefined) => {
-    if (!status) return '#6c757d';
-    const normalizedStatus = status.toUpperCase().trim();
-    
-    // Handle full text statuses first
-    if (normalizedStatus === 'LEAST CONCERN') return '#4caf50';
-    if (normalizedStatus === 'NEAR THREATENED') return '#8bc34a';
-    if (normalizedStatus === 'VULNERABLE') return '#ffc107';
-    if (normalizedStatus === 'ENDANGERED') return '#ff9800';
-    if (normalizedStatus === 'CRITICALLY ENDANGERED') return '#f44336';
-    if (normalizedStatus === 'EXTINCT IN THE WILD') return '#9c27b0';
-    if (normalizedStatus === 'EXTINCT') return '#000000';
-    if (normalizedStatus === 'DATA DEFICIENT') return '#607d8b';
-    if (normalizedStatus === 'NOT EVALUATED') return '#6c757d';
-    return '#6c757d';
-  };
 
   const handlePress = () => {
     router.push({
@@ -87,22 +69,12 @@ export function IdentificationCard({ identification }: IdentificationCardProps) 
         )}
         <View style={styles.plantDetails}>
           <Text style={styles.plantName}>
-            {identification.commonName || identification.plantName}
+            {identification.plantName}
           </Text>
           {identification.description && (
             <Text style={styles.description}>
               {cleanAndTruncateText(identification.description)}
             </Text>
-          )}
-          {identification.conservationStatus && (
-            <View style={[
-              styles.conservationStatus,
-              { backgroundColor: getConservationStatusColor(identification.conservationStatus) }
-            ]}>
-              <Text style={styles.conservationStatusText}>
-                {identification.conservationStatus}
-              </Text>
-            </View>
           )}
         </View>
       </View>
@@ -188,16 +160,4 @@ const styles = StyleSheet.create({
     color: '#495057',
     lineHeight: 18,
   },
-  conservationStatus: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
-    alignSelf: 'flex-start',
-    marginTop: 4,
-  },
-  conservationStatusText: {
-    color: '#ffffff',
-    fontSize: 12,
-    fontWeight: '600',
-  }
 });
