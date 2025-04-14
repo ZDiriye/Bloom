@@ -46,10 +46,9 @@ export default function RegisterScreen() {
         xp: 0
       });
 
-      // 3. Redirect to home screen with animation
+      // 3. Redirect to home screen
       router.push('/(tabs)/home');
     } catch (error: any) {
-      console.error('Registration error:', error);
       handleAuthError(error.code);
     } finally {
       setLoading(false);
@@ -81,7 +80,7 @@ export default function RegisterScreen() {
       <Stack.Screen 
         options={{
           headerShown: false,
-          animation: 'slide_from_left'
+          animation: 'none'
         }} 
       />
       <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>

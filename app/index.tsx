@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
-import { View, Text, ActivityIndicator, StyleSheet, Image } from 'react-native';
+import { View, Text, StyleSheet, Image, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { auth } from '../services/firebase';
 import { User } from 'firebase/auth';
 import { StatusBar } from 'expo-status-bar';
+import { LinearGradient } from 'expo-linear-gradient';
 
 export default function LoadingScreen() {
   const router = useRouter();
@@ -13,12 +14,15 @@ export default function LoadingScreen() {
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(
       (user: User | null) => {
-        setIsLoading(false);
-        if (user) {
-          router.replace('/home');
-        } else {
-          router.replace('/login');
-        }
+        // Add delay before routing
+        setTimeout(() => {
+          setIsLoading(false);
+          if (user) {
+            router.replace('/home');
+          } else {
+            router.replace('/login');
+          }
+        }, 2000); // 2000 milliseconds = 2 seconds
       },
       (error) => {
         console.error('Auth state change error:', error);
@@ -27,7 +31,6 @@ export default function LoadingScreen() {
       }
     );
 
-    // Cleanup subscription on unmount
     return () => unsubscribe();
   }, []);
 
@@ -43,14 +46,26 @@ export default function LoadingScreen() {
 
   return (
     <View style={styles.container}>
+      {/* Gradient Background */}
+      <LinearGradient
+        colors={['#2c6e49', '#4c956c']}
+        style={StyleSheet.absoluteFillObject}
+      />
       <StatusBar style="auto" />
+
+      {/* Centered & Bigger Logo */}
       <Image
-        //source={require('../assets/icon.png')}
+        source={require('../assets/images/logo.png')}
         style={styles.logo}
         resizeMode="contain"
       />
-      <ActivityIndicator size="large" color="#0000ff" style={styles.spinner} />
-      <Text style={styles.loadingText}>Loading...</Text>
+      
+      {/* Loading Wheel */}
+      <ActivityIndicator 
+        size="large" 
+        color="#ffffff" 
+        style={styles.spinner} 
+      />
     </View>
   );
 }
@@ -60,20 +75,14 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#ffffff',
   },
   logo: {
-    width: 120,
-    height: 120,
+    width: 200,
+    height: 200,
     marginBottom: 20,
   },
   spinner: {
     marginVertical: 20,
-  },
-  loadingText: {
-    fontSize: 16,
-    color: '#666666',
-    marginTop: 10,
   },
   errorText: {
     fontSize: 16,

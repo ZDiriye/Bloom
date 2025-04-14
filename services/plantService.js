@@ -23,7 +23,7 @@ class PlantService {
     try {
       const basicData = await fetchPlantDataBasic(plantName);
       if (!basicData) {
-        throw new Error(`No plant found with name: ${plantName}`);
+        throw new Error('No plant found with this name');
       }
       const plantId = basicData.id;
 
@@ -40,7 +40,7 @@ class PlantService {
       ]);
 
       if (!detailedData) {
-        throw new Error('Failed to fetch plant details');
+        throw new Error('Unable to fetch plant details');
       }
       
       await this.updateUserXP(userId, detailedData.observations_count);
@@ -51,13 +51,12 @@ class PlantService {
       // Fetch the saved data to ensure consistency
       const savedData = await this.getPlantInfo(userId, plantId);
       if (!savedData) {
-        throw new Error('Failed to save plant data');
+        throw new Error('Unable to save plant data');
       }
 
       return savedData;
     } catch (error) {
-      console.error('fetchPlantAndSave error:', error);
-      throw error;
+      throw new Error(error.message || 'An error occurred while processing the plant data');
     }
   }
   

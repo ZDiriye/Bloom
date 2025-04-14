@@ -25,7 +25,6 @@ export default function LoginScreen() {
       await signInWithEmailAndPassword(auth, email, password);
       router.replace('/(tabs)/home');
     } catch (error: any) {
-      console.error('Login error:', error);
       handleAuthError(error.code);
     } finally {
       setLoading(false);
@@ -69,6 +68,8 @@ export default function LoginScreen() {
             onChangeText={setEmail}
             autoCapitalize="none"
             keyboardType="email-address"
+            autoComplete="off"
+            textContentType="emailAddress"
           />
           
           <TextInput
@@ -78,6 +79,8 @@ export default function LoginScreen() {
             value={password}
             onChangeText={setPassword}
             secureTextEntry
+            autoComplete="off"
+            textContentType="oneTimeCode"
           />
           
           <TouchableOpacity
