@@ -27,12 +27,6 @@ class PlantService {
       }
       const plantId = basicData.id;
 
-      // Try to get existing data first
-      const existingData = await this.getPlantInfo(userId, plantId);
-      if (existingData) {
-        return existingData;
-      }
-
       // Fetch new data
       const [detailedData, obsData] = await Promise.all([
         fetchPlantDetails(plantId),
@@ -46,15 +40,37 @@ class PlantService {
       await this.updateUserXP(userId, detailedData.observations_count);
 
       const observations = obsData?.results || [];
-      await savePlantIdentification(userId, detailedData, observations);
 
-      // Fetch the saved data to ensure consistency
-      const savedData = await this.getPlantInfo(userId, plantId);
-      if (!savedData) {
-        throw new Error('Unable to save plant data');
-      }
+      // Format the data once
+      const formattedPlantData = {
+        id: detailedData.id,
+        name: detailedData.name,
+        commonName: detailedData.preferred_common_name || '',
+        defaultPhoto: detailedData.default_photo?.medium_url || '',
+        taxonomy: detailedData.ancestors || [],
+        wikipediaSummary: detailedData.wikipedia_summary || '',
+        wikipediaUrl: detailedData.wikipedia_url || '',
+        extinct: detailedData.extinct || false,
+        observationsCount: detailedData.observations_count || 0,
+        conservationStatus: detailedData.conservation_status?.status || 'Not Evaluated',
+        endemic: detailedData.endemic || false,
+        firstObservation: detailedData.first_observation || 'Unknown'
+      };
 
-      return savedData;
+      const formattedObservations = observations.map(obs => ({
+        location: obs.geojson?.coordinates || null,
+        observedOn: obs.observed_on || null,
+        user: obs.user || { login: 'Anonymous' }
+      }));
+
+      // Save using the formatted data
+      await savePlantIdentification(userId, formattedPlantData, formattedObservations);
+
+      // Return the same formatted data
+      return { 
+        plantData: formattedPlantData, 
+        observations: formattedObservations 
+      };
     } catch (error) {
       throw new Error(error.message || 'An error occurred while processing the plant data');
     }
