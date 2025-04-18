@@ -15,7 +15,7 @@ import { savePlantIdentification } from './plantStorage';
 import { auth } from './firebase';
 
 class PlantService {
-  async fetchPlantAndSave(plantName, userId) {
+  async fetchPlantAndSave(plantName, userId, probability) {
     if (!plantName || !userId) {
       throw new Error('Plant name and user ID are required');
     }
@@ -58,49 +58,89 @@ class PlantService {
       };
 
       const formattedObservations = observations.map(obs => ({
-        location: obs.geojson?.coordinates || null,
-        observedOn: obs.observed_on || null,
-        user: obs.user || { login: 'Anonymous' }
-      }));
+        location: obs.geojson?.coordinates || null
+      })).filter(obs => obs.location !== null);
 
       // Save using the formatted data
-      await savePlantIdentification(userId, formattedPlantData, formattedObservations);
+      const saveResult = await savePlantIdentification(userId, formattedPlantData, formattedObservations, probability);
 
-      // Return the same formatted data
+      // Return the formatted data
       return { 
         plantData: formattedPlantData, 
-        observations: formattedObservations 
+        observations: saveResult.observations,
+        probability: probability,
+        observationId: saveResult.newObservationId
       };
     } catch (error) {
       throw new Error(error.message || 'An error occurred while processing the plant data');
     }
   }
-  
-  async getPlantInfo(userId, plantId) {
-    if (!userId || !plantId) {
-      throw new Error('User ID and plant ID are required');
+
+  async getPlantInfo(plantName, observationId) {
+    if (!plantName || !observationId) {
+      throw new Error('Plant name and observation ID are required');
     }
 
     try {
-      const plantRef = doc(db, 'plants', plantId.toString());
-      const plantSnap = await getDoc(plantRef);
-      if (!plantSnap.exists()) {
-        return null;
+      // First get the observation to get the correct plantId
+      const observationRef = doc(db, 'observations', observationId);
+      const observationDoc = await getDoc(observationRef);
+
+      if (!observationDoc.exists()) {
+        throw new Error('Observation not found in database');
       }
-      const plantData = plantSnap.data();
 
-      const obsDocId = `${userId}_${plantId}`;
-      const obsRef = doc(db, 'observations', obsDocId);
-      const obsSnap = await getDoc(obsRef);
-      const observations = obsSnap.exists() ? obsSnap.data().observations : [];
+      const observationData = observationDoc.data();
+      const plantId = observationData.plantId;
 
-      return { plantData, observations };
+      if (!plantId) {
+        throw new Error('Observation does not have a valid plantId');
+      }
+
+      // Get the plant from the database using the plantId
+      const plantRef = doc(db, 'plants', plantId.toString());
+      const plantDoc = await getDoc(plantRef);
+
+      if (!plantDoc.exists()) {
+        throw new Error('Plant not found in database');
+      }
+
+      const plantData = plantDoc.data();
+      
+      // Get observations from the database
+      const observationsQuery = query(
+        collection(db, 'observations'),
+        where('plantId', '==', plantId),
+        limit(50)
+      );
+      const observationsSnapshot = await getDocs(observationsQuery);
+      const observations = [];
+      let probability = null;
+      observationsSnapshot.docs.forEach(doc => {
+        const data = doc.data();
+        // Get the probability from the first observation document
+        if (!probability && data.probability) {
+          probability = data.probability;
+        }
+        if (data.observations && Array.isArray(data.observations)) {
+          data.observations.forEach(obs => {
+            if (obs.location) {
+              observations.push({ location: obs.location });
+            }
+          });
+        }
+      });
+
+      return {
+        plantData,
+        observations,
+        probability
+      };
     } catch (error) {
-      console.error('getPlantInfo error:', error);
-      throw error;
+      throw new Error(error.message || 'An error occurred while fetching plant data from database');
     }
   }
-
+  
   async getRecentIdentifications() {
     try {
       const observationsQuery = query(

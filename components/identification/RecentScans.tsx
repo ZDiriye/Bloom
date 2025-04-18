@@ -36,10 +36,13 @@ export function RecentScans() {
     loadRecentScans();
   }, []);
 
-  const handleScanPress = (plantName: string) => {
+  const handleScanPress = (plantName: string, observationId: string) => {
     router.push({
       pathname: '/(tabs)/plant_info',
-      params: { plantName }
+      params: { 
+        plantName,
+        observationId 
+      }
     });
   };
 
@@ -79,7 +82,7 @@ export function RecentScans() {
           <TouchableOpacity
             key={scan.id}
             style={styles.scanCard}
-            onPress={() => handleScanPress(scan.plantData?.name || '')}
+            onPress={() => handleScanPress(scan.plantData?.name || '', scan.id)}
           >
             <Image
               source={{ uri: scan.plantData?.defaultPhoto }}

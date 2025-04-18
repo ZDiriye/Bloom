@@ -24,7 +24,10 @@ export function IdentificationCard({ identification }: IdentificationCardProps) 
   const handlePress = () => {
     router.push({
       pathname: '/(tabs)/plant_info',
-      params: { plantName: identification.plantName },
+      params: { 
+        plantName: identification.plantName,
+        observationId: identification.id 
+      },
     });
   };
 

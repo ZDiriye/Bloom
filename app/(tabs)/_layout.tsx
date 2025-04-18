@@ -10,12 +10,12 @@ export default function TabLayout() {
         headerShown: false,
         tabBarStyle: {
           position: 'absolute',
-          bottom: Platform.OS === 'ios' ? 20 : 16,
-          left: 16,
-          right: 16,
+          bottom: 0,
+          left: 0,
+          right: 0,
           elevation: 0,
-          borderRadius: 24,
-          height: 64,
+          borderRadius: 0,
+          height: Platform.OS === 'ios' ? 74 : 70,
           backgroundColor: 'rgba(255, 255, 255, 0.9)',
           borderTopWidth: 0,
           shadowColor: '#000',
@@ -25,6 +25,7 @@ export default function TabLayout() {
           },
           shadowOpacity: 0.1,
           shadowRadius: 12,
+          paddingBottom: Platform.OS === 'ios' ? 20 : 16,
         },
         tabBarBackground: () => (
           <BlurView
@@ -39,10 +40,10 @@ export default function TabLayout() {
         tabBarLabelStyle: {
           fontSize: 12,
           fontWeight: '600',
-          marginBottom: Platform.OS === 'ios' ? 0 : 8,
+          marginBottom: Platform.OS === 'ios' ? 12 : 16,
         },
         tabBarIconStyle: {
-          marginTop: Platform.OS === 'ios' ? 8 : 0,
+          marginTop: Platform.OS === 'ios' ? 8 : 4,
         }
       }}
     >
@@ -81,6 +82,17 @@ export default function TabLayout() {
           tabBarIcon: ({ color, size }) => (
             <View style={styles.iconContainer}>
               <Ionicons name="trophy" size={size} color={color} />
+            </View>
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: 'Profile',
+          tabBarIcon: ({ color, size }) => (
+            <View style={styles.iconContainer}>
+              <Ionicons name="person" size={size} color={color} />
             </View>
           ),
         }}

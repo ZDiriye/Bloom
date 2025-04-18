@@ -8,7 +8,7 @@ import {
   serverTimestamp,
 } from 'firebase/firestore';
 
-export async function savePlantIdentification(userId, plantData, observations) {
+export async function savePlantIdentification(userId, plantData, observations, probability) {
   try {
     // Save plant details in the "plants" collection.
     const plantRef = doc(db, 'plants', plantData.id.toString());
@@ -22,12 +22,18 @@ export async function savePlantIdentification(userId, plantData, observations) {
 
     // Create a new observation document in the "observations" collection
     const observationsCollection = collection(db, 'observations');
-    await addDoc(observationsCollection, {
+    const newObservation = await addDoc(observationsCollection, {
       userId,
       plantId: plantData.id,
       observations: observations,
+      probability: probability,
       createdAt: serverTimestamp(),
     });
+
+    return {
+      newObservationId: newObservation.id,
+      observations: observations
+    };
   } catch (error) {
     console.error('savePlantIdentification error:', error);
     throw error;

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, TextInput, TouchableOpacity, Text, ActivityIndicator, StyleSheet, Alert } from 'react-native';
+import { View, TextInput, TouchableOpacity, Text, ActivityIndicator, StyleSheet, Alert, ScrollView } from 'react-native';
 import { useRouter, Stack } from 'expo-router';
 import { auth, db } from '../services/firebase';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
@@ -91,62 +91,67 @@ export default function RegisterScreen() {
           onBack={goToLogin}
         />
 
-        <View style={styles.centerContainer}>
-          <View style={styles.formContainer}>
-            <Text style={styles.title}>Create Account</Text>
-            
-            {error ? <Text style={styles.error}>{error}</Text> : null}
+        <ScrollView 
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={styles.centerContainer}>
+            <View style={styles.formContainer}>
+              <Text style={styles.title}>Create Account</Text>
+              
+              {error ? <Text style={styles.error}>{error}</Text> : null}
 
-            <TextInput
-              style={styles.input}
-              placeholder="User Name"
-              placeholderTextColor="#888"
-              value={displayName}
-              onChangeText={setDisplayName}
-              autoCapitalize="words"
-            />
+              <TextInput
+                style={styles.input}
+                placeholder="User Name"
+                placeholderTextColor="#888"
+                value={displayName}
+                onChangeText={setDisplayName}
+                autoCapitalize="words"
+              />
 
-            <TextInput
-              style={styles.input}
-              placeholder="Email"
-              placeholderTextColor="#888"
-              value={email}
-              onChangeText={setEmail}
-              autoCapitalize="none"
-              keyboardType="email-address"
-            />
+              <TextInput
+                style={styles.input}
+                placeholder="Email"
+                placeholderTextColor="#888"
+                value={email}
+                onChangeText={setEmail}
+                autoCapitalize="none"
+                keyboardType="email-address"
+              />
 
-            <TextInput
-              style={styles.input}
-              placeholder="Password"
-              placeholderTextColor="#888"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-            />
+              <TextInput
+                style={styles.input}
+                placeholder="Password"
+                placeholderTextColor="#888"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry
+              />
 
-            <TouchableOpacity
-              style={styles.button}
-              onPress={handleRegister}
-              disabled={loading}
-            >
-              {loading ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <Text style={styles.buttonText}>Create Account</Text>
-              )}
-            </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.button}
+                onPress={handleRegister}
+                disabled={loading}
+              >
+                {loading ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={styles.buttonText}>Create Account</Text>
+                )}
+              </TouchableOpacity>
 
-            <TouchableOpacity 
-              style={styles.link} 
-              onPress={goToLogin}
-            >
-              <Text style={styles.linkText}>
-                Already have an account? Login
-              </Text>
-            </TouchableOpacity>
+              <TouchableOpacity 
+                style={styles.link} 
+                onPress={goToLogin}
+              >
+                <Text style={styles.linkText}>
+                  Already have an account? Login
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
-        </View>
+        </ScrollView>
       </View>
     </>
   );
@@ -155,6 +160,9 @@ export default function RegisterScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
   },
   centerContainer: {
     flex: 1,

@@ -22,9 +22,10 @@ interface PlantInfo {
 
 interface PlantOverviewProps {
   plantInfo: PlantInfo;
+  predictionProbability?: number | null;
 }
 
-const PlantOverview: React.FC<PlantOverviewProps> = ({ plantInfo }) => {
+const PlantOverview: React.FC<PlantOverviewProps> = ({ plantInfo, predictionProbability }) => {
   const getPlantTraits = () => ({
     isExtinct: plantInfo?.extinct ? 'Extinct' : 'Not Extinct',
     observations: plantInfo?.observationsCount?.toLocaleString() || '0',
@@ -98,6 +99,28 @@ const PlantOverview: React.FC<PlantOverviewProps> = ({ plantInfo }) => {
   return (
     <View style={styles.section}>
       <Text style={styles.sectionTitle}>Plant Overview</Text>
+      
+      {predictionProbability !== null && predictionProbability !== undefined && predictionProbability >= 0.5 && (
+        <View style={styles.factRow}>
+          <View style={[styles.factIconContainer, { 
+            backgroundColor: predictionProbability >= 0.8 ? '#4caf50' : 
+                           predictionProbability >= 0.6 ? '#ffc107' : '#ff9800' 
+          }]}>
+            <Ionicons name="analytics" size={22} color="#ffffff" />
+          </View>
+          <View style={styles.factContent}>
+            <Text style={styles.factTitle}>Identification Confidence</Text>
+            <Text style={styles.factValue}>
+              {(predictionProbability * 100).toFixed(1)}%
+            </Text>
+            {predictionProbability < 0.6 && (
+              <Text style={[styles.factNote, { color: '#ff8a80' }]}>
+                Moderate confidence - please verify the identification
+              </Text>
+            )}
+          </View>
+        </View>
+      )}
       
       <View style={styles.factRow}>
         <View style={styles.factIconContainer}>
