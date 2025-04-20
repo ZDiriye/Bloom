@@ -1,5 +1,8 @@
 {
   "expo": {
+    "extra": { 
+    "GOOGLE_GEMINI_API_KEY": "AIzaSyC3sysUDgpOm-F7A8VrjI99g1Xjn6LuDXA"
+    },
     "name": "Bloom1",
     "slug": "Bloom1",
     "version": "1.0.0",
@@ -22,6 +25,7 @@
       "output": "static",
       "favicon": "./assets/images/favicon.png"
     },
+    
     "plugins": [
       "expo-router",
       [

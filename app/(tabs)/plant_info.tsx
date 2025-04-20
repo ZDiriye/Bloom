@@ -1,5 +1,4 @@
-// PlantInfoScreen.js
-import { View, StyleSheet, ScrollView, ActivityIndicator, Text } from 'react-native';
+import { View, StyleSheet, ScrollView, ActivityIndicator, Text, TouchableOpacity, } from 'react-native';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -16,7 +15,7 @@ import PlantOverview from '../../components/plant_info/PlantOverview';
 import PlantTaxonomy from '../../components/plant_info/PlantTaxonomy';
 import PlantMap from '../../components/plant_info/PlantMap';
 import PlantDescription from '../../components/plant_info/PlantDescription';
-import ExternalLinks from '../../components/plant_info/ExternalLinks';
+import PlantChatModal from '../../components/plant_info/PlantChatModal';
 import LowConfidenceMessage from '../../components/plant_info/LowConfidenceMessage';
 
 interface PlantInfo extends DocumentData {
@@ -63,6 +62,9 @@ export default function PlantInfoScreen() {
   const [loadingMap, setLoadingMap] = useState(true);
   const [isProcessing, setIsProcessing] = useState(!!photoUri);
   const [showLowConfidenceMessage, setShowLowConfidenceMessage] = useState(false);
+  const [chatVisible, setChatVisible] = useState(false);
+  const openChat  = () => setChatVisible(true);
+  const closeChat = () => setChatVisible(false);
 
   const getPlantNameFromId = (plantId: string): string | null => {
     const plantName = classNames[plantId as keyof typeof classNames];
@@ -238,21 +240,52 @@ export default function PlantInfoScreen() {
                 plantInfo={plantInfo} 
                 predictionProbability={predictionProbability}
               />
-              <PlantTaxonomy ancestors={plantInfo.taxonomy} currentSpecies={plantInfo.name} />
-              <PlantMap observations={observations} mapRegion={mapRegion} loading={loadingMap} />
-              {plantInfo.wikipediaSummary && <PlantDescription description={plantInfo.wikipediaSummary} />}
-              {plantInfo.wikipediaUrl && <ExternalLinks wikipediaUrl={plantInfo.wikipediaUrl} />}
+              <PlantTaxonomy 
+                ancestors={plantInfo.taxonomy} 
+                currentSpecies={plantInfo.name} 
+              />
+              <PlantMap 
+                observations={observations} 
+                mapRegion={mapRegion} 
+                loading={loadingMap} 
+              />
+              {plantInfo.wikipediaSummary && (
+                <PlantDescription description={plantInfo.wikipediaSummary} />
+              )}
+
+              {/* ---------- Ask Gemini button ---------- */}
+              <TouchableOpacity style={styles.askBtn} onPress={openChat}>
+                <Text style={styles.askBtnText}>Ask Gemini</Text>
+              </TouchableOpacity>
             </>
           ) : null}
         </ScrollView>
       </View>
+      {/* ---------- Chat modal ---------- */}
+      {plantInfo && (
+        <PlantChatModal
+          plantName={plantInfo.name}
+          visible={chatVisible}
+          onClose={closeChat}
+        />
+      )}
     </>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  content: { padding: 16, paddingBottom: 80 },
+  content: { padding: 16, paddingBottom:100 },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   loadingText: { fontSize: 16, color: '#ffffff', marginTop: 16 },
+
+  askBtn: {
+    alignSelf: 'center',
+    backgroundColor: '#4c956c',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 20,
+    marginTop: 12,
+  },
+  askBtnText: { color: '#fff', fontWeight: '600', fontSize: 16 },
 });

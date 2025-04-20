@@ -35,7 +35,7 @@ top_class_ids = [
   "1357677", "1363749"
 ]
 
-input_shape = input_details[0]['shape']  # e.g., [1, 224, 224, 3]
+input_shape = input_details[0]['shape']
 
 def preprocess_image(image, target_size):
     image = ImageOps.exif_transpose(image)
