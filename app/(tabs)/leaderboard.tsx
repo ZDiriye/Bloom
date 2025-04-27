@@ -4,6 +4,8 @@ import { plantService } from '../../services/plantService';
 import { useTheme } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+
 
 interface User {
   userId: string;
@@ -18,6 +20,7 @@ export default function LeaderboardScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const { colors } = useTheme();
+  const router = useRouter();
 
   useEffect(() => {
     fetchTopUsers();
@@ -42,6 +45,13 @@ export default function LeaderboardScreen() {
     }
   };
 
+  const showUser = (id: string) => {
+    router.push({
+      pathname: '/(tabs)/userProfileScreen',
+      params: { userId: id }
+    });
+  };
+  
   const onRefresh = React.useCallback(() => {
     setRefreshing(true);
     fetchTopUsers();
@@ -49,7 +59,6 @@ export default function LeaderboardScreen() {
 
   const renderUserItem = ({ item, index }: { item: User; index: number }) => {
     const isTopThree = item.rank && item.rank <= 3;
-    
     // Determine background color based on rank
     const getItemBackground = (rank: number) => {
       switch (rank) {
@@ -75,6 +84,7 @@ export default function LeaderboardScreen() {
       <TouchableOpacity 
         activeOpacity={0.7}
         style={styles.itemContainer}
+        onPress={() => showUser(item.userId)}
       >
         <View
           style={[

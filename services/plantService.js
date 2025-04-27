@@ -235,4 +235,113 @@ class PlantService {
   }
 }
 
+export async function getUserProfileData(userId) {
+  if (!userId) throw new Error('userId required');
+
+  // 1. pull all observations for the user
+  let observations = [];
+  try {
+    const obsQ = query(
+      collection(db, 'observations'),
+      where('userId', '==', userId)
+    );
+    const obsSnap = await getDocs(obsQ);
+    observations = obsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+  } catch (error) {
+    console.error('Error fetching observations:', error);
+    throw error;
+  }
+
+  const totalIdentifications = observations.length;
+
+  // 2. find rarest plant among those observations
+  let rarestPlant = null;
+  let rarestCount = Infinity;
+
+  // Get all unique plant IDs from observations
+  const uniquePlantIds = [...new Set(observations.map(obs => obs.plantId))];
+  
+  // Fetch all plants and find the rarest one
+  for (const plantId of uniquePlantIds) {
+    const plantRef = doc(db, 'plants', plantId.toString());
+    const plantSnap = await getDoc(plantRef);
+    if (!plantSnap.exists()) continue;
+
+    const plant = plantSnap.data();
+    const count = plant.observationsCount ?? 0;
+
+    if (count < rarestCount) {
+      rarestCount = count;
+      rarestPlant = {
+        id: plant.id,
+        name: plant.name,
+        commonName: plant.commonName,
+        observationsCount: count,
+        photo: plant.defaultPhoto
+      };
+    }
+  }
+
+  // 3. find most recent observation
+  let mostRecentObservation = null;
+  try {
+    // First try with the composite index
+    const recentObsQ = query(
+      collection(db, 'observations'),
+      where('userId', '==', userId),
+      orderBy('createdAt', 'desc'),
+      limit(1)
+    );
+    const recentObsSnap = await getDocs(recentObsQ);
+    mostRecentObservation = recentObsSnap.docs[0]?.data() || null;
+  } catch (error) {
+    console.warn('Error fetching most recent observation with index:', error);
+    // Fallback to finding most recent manually
+    mostRecentObservation = observations.reduce((latest, current) => {
+      if (!latest || !latest.createdAt) return current;
+      if (!current.createdAt) return latest;
+      return current.createdAt.toDate().getTime() > latest.createdAt.toDate().getTime() ? current : latest;
+    }, null);
+  }
+
+  // 4. pull user document for name, xp, photo
+  const userRef = doc(db, 'users', userId);
+  const userSnap = await getDoc(userRef);
+  
+  if (!userSnap.exists()) {
+    throw new Error('User not found');
+  }
+
+  const userData = userSnap.data();
+  
+  // 5. Get plant data for most recent observation if it exists
+  let mostRecentPlant = null;
+  if (mostRecentObservation && mostRecentObservation.plantId) {
+    const plantRef = doc(db, 'plants', mostRecentObservation.plantId.toString());
+    const plantSnap = await getDoc(plantRef);
+    if (plantSnap.exists()) {
+      const plant = plantSnap.data();
+      mostRecentPlant = {
+        id: plant.id,
+        name: plant.name,
+        commonName: plant.commonName,
+        photo: plant.defaultPhoto,
+        timestamp: mostRecentObservation.createdAt
+      };
+    }
+  }
+  
+  return {
+    user: {
+      displayName: userData.displayName || 'Anonymous',
+      xp: userData.xp || 0,
+      photoURL: userData.photoURL || userData.profilePic || null
+    },
+    totalIdentifications,
+    rarestPlant,
+    mostRecentPlant
+  };
+}
+
 export const plantService = new PlantService();
+
