@@ -76,69 +76,32 @@ class PlantService {
     }
   }
 
-  async getPlantInfo(plantName, observationId) {
-    if (!plantName || !observationId) {
-      throw new Error('Plant name and observation ID are required');
-    }
+  async getPlantInfo(observationId) {
+    if (!observationId) throw new Error('observation id required');
 
-    try {
-      // First get the observation to get the correct plantId
-      const observationRef = doc(db, 'observations', observationId);
-      const observationDoc = await getDoc(observationRef);
+    const obsRef = doc(db, 'observations', observationId);
+    const obsSnap = await getDoc(obsRef);
+    if (!obsSnap.exists()) throw new Error('observation not found');
 
-      if (!observationDoc.exists()) {
-        throw new Error('Observation not found in database');
-      }
+    const { plantId, probability } = obsSnap.data();
+    if (!plantId) throw new Error('no plantId in observation');
 
-      const observationData = observationDoc.data();
-      const plantId = observationData.plantId;
+    const plantRef = doc(db, 'plants', plantId.toString());
+    const plantSnap = await getDoc(plantRef);
+    if (!plantSnap.exists()) throw new Error('plant not found');
 
-      if (!plantId) {
-        throw new Error('Observation does not have a valid plantId');
-      }
+    /* gather up to 50 other observations for the same plant */
+    const q = query(
+      collection(db, 'observations'),
+      where('plantId', '==', plantId),
+      limit(50)
+    );
+    const other = await getDocs(q);
+    const observations = other.docs.flatMap(d =>
+      (d.data().observations ?? []).filter((o) => o.location)
+    );
 
-      // Get the plant from the database using the plantId
-      const plantRef = doc(db, 'plants', plantId.toString());
-      const plantDoc = await getDoc(plantRef);
-
-      if (!plantDoc.exists()) {
-        throw new Error('Plant not found in database');
-      }
-
-      const plantData = plantDoc.data();
-      
-      // Get observations from the database
-      const observationsQuery = query(
-        collection(db, 'observations'),
-        where('plantId', '==', plantId),
-        limit(50)
-      );
-      const observationsSnapshot = await getDocs(observationsQuery);
-      const observations = [];
-      let probability = null;
-      observationsSnapshot.docs.forEach(doc => {
-        const data = doc.data();
-        // Get the probability from the first observation document
-        if (!probability && data.probability) {
-          probability = data.probability;
-        }
-        if (data.observations && Array.isArray(data.observations)) {
-          data.observations.forEach(obs => {
-            if (obs.location) {
-              observations.push({ location: obs.location });
-            }
-          });
-        }
-      });
-
-      return {
-        plantData,
-        observations,
-        probability
-      };
-    } catch (error) {
-      throw new Error(error.message || 'An error occurred while fetching plant data from database');
-    }
+    return { plantData: plantSnap.data(), observations, probability };
   }
   
   async getRecentIdentifications() {

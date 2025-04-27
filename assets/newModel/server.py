@@ -2,11 +2,9 @@ import io
 import numpy as np
 from PIL import Image, ImageOps
 from flask import Flask, request, jsonify
-# from flask_cors import CORS
 import tensorflow as tf
 
 app = Flask(__name__)
-# CORS(app)  # Enable CORS
 
 # Load the TFLite model and allocate tensors.
 interpreter = tf.lite.Interpreter(model_path="model.tflite")
@@ -32,7 +30,14 @@ top_class_ids = [
   "1390637", "1359625", "1364172", "1360998", "1391652", "1360588", "1358605",
   "1359488", "1361759", "1356126", "1391226", "1360153", "1398128", "1358751",
   "1360590", "1359485", "1394489", "1393792", "1363737", "1358105", "1421021",
-  "1357677", "1363749"
+  "1357677", "1363749", "1356421", "1363490", "1420863", "1363699", "1358150",
+  "1397420", "1418547", "1392695", "1529081", "1409292", "1360811", "1397312",
+  "1356692", "1394504", "1398444", "1393449", "1362954", "1359197", "1392777",
+  "1402921", "1363129", "1396708", "1397303", "1393466", "1361666", "1420795",
+  "1391953", "1529328", "1363110", "1393725", "1393946", "1355868", "1359525",
+  "1391797", "1359483", "1399145", "1399783", "1394120", "1356428", "1363021",
+  "1394399", "1361024", "1393414", "1356420", "1356816", "1357705", "1396843",
+  "1393250", "1398326", "1408045"
 ]
 
 input_shape = input_details[0]['shape']
@@ -73,6 +78,7 @@ def predict():
     output_data = interpreter.get_tensor(output_details[0]['index'])
 
     predicted_class = int(np.argmax(output_data))
+    print(predicted_class)
     probability = float(np.max(output_data))
     plant_id = top_class_ids[predicted_class]
 

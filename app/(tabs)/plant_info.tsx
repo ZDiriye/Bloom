@@ -142,7 +142,7 @@ export default function PlantInfoScreen() {
         setIsProcessing(true);
         if (photoUri && !observationId) {  // Only check confidence for new photos, not existing observations
           // If we have a photo, predict the plant
-          const prediction = await predictImage(photoUri);          
+          const prediction = await predictImage(photoUri);    
           if (!prediction) {
             console.error('No prediction returned from predictImage');
             return;
@@ -185,7 +185,7 @@ export default function PlantInfoScreen() {
           setMapRegion(computeMapRegion(result.observations || []));
         } else {
           // If no photo or it's an existing observation, get plant info
-          const result = await plantService.getPlantInfo(plantName, observationId);
+          const result = await plantService.getPlantInfo(observationId);
           setPlantInfo(result.plantData as PlantInfo);
           setObservations(result.observations);
           setPredictionProbability(result.probability);
@@ -232,28 +232,27 @@ export default function PlantInfoScreen() {
           ) : plantInfo ? (
             <>
               <PlantImageSection
-                imageUrl={plantInfo.defaultPhoto}
-                scientificName={plantInfo.name}
-                commonName={plantInfo.commonName}
+                imageUrl={plantInfo?.defaultPhoto ?? ''}
+                scientificName={plantInfo?.name ?? ''}
+                commonName={plantInfo?.commonName ?? ''}
               />
               <PlantOverview 
                 plantInfo={plantInfo} 
                 predictionProbability={predictionProbability}
               />
-              <PlantTaxonomy 
-                ancestors={plantInfo.taxonomy} 
-                currentSpecies={plantInfo.name} 
+              <PlantTaxonomy
+                ancestors={plantInfo?.taxonomy ?? []}
+                currentSpecies={plantInfo?.name ?? ''}
               />
               <PlantMap 
                 observations={observations} 
                 mapRegion={mapRegion} 
                 loading={loadingMap} 
               />
-              {plantInfo.wikipediaSummary && (
+              {plantInfo?.wikipediaSummary && (
                 <PlantDescription description={plantInfo.wikipediaSummary} />
               )}
 
-              {/* ---------- Ask Gemini button ---------- */}
               <TouchableOpacity style={styles.askBtn} onPress={openChat}>
                 <Text style={styles.askBtnText}>Ask Gemini</Text>
               </TouchableOpacity>
@@ -261,7 +260,6 @@ export default function PlantInfoScreen() {
           ) : null}
         </ScrollView>
       </View>
-      {/* ---------- Chat modal ---------- */}
       {plantInfo && (
         <PlantChatModal
           plantName={plantInfo.name}
