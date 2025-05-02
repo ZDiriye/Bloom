@@ -73,65 +73,79 @@ export default function PlantInfoScreen() {
     return plantName.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase());
   };
 
-  // Compute a region that covers all observation coordinates
-  const computeMapRegion = (obs: Observation[]): Region => {
-    const validObs = obs.filter(o => o.location && o.location.length === 2 && 
-      typeof o.location[0] === 'number' && typeof o.location[1] === 'number' &&
-      o.location[0] >= -180 && o.location[0] <= 180 &&
-      o.location[1] >= -90 && o.location[1] <= 90);
-
-    if (validObs.length === 0) {
-      // Default to a reasonable view of the world
+  const computeMapRegion = (observations: Observation[]): Region => {
+    if (!observations || observations.length === 0) {
+      // Default to a world view if no observations
       return {
-        latitude: 20,
+        latitude: 0,
         longitude: 0,
         latitudeDelta: 90,
         longitudeDelta: 180,
       };
     }
 
-    try {
-      // Note: Assuming location is [longitude, latitude]
-      const lats = validObs.map(o => o.location[1]);
-      const lngs = validObs.map(o => o.location[0]);
-      
-      const minLat = Math.min(...lats);
-      const maxLat = Math.max(...lats);
-      const minLng = Math.min(...lngs);
-      const maxLng = Math.max(...lngs);
-      
-      const midLat = (minLat + maxLat) / 2;
-      const midLng = (minLng + maxLng) / 2;
-      
-      // Calculate deltas with padding
-      const latPadding = 0.2; // 20% padding
-      const lngPadding = 0.2;
-      
-      const latitudeDelta = Math.max(
-        (maxLat - minLat) * (1 + latPadding),
-        0.5 // Minimum zoom level
-      );
-      const longitudeDelta = Math.max(
-        (maxLng - minLng) * (1 + lngPadding),
-        0.5 // Minimum zoom level
-      );
+    // Filter out observations without valid coordinates
+    const validObservations = observations.filter(obs => 
+      obs.location && 
+      Array.isArray(obs.location) && 
+      obs.location.length === 2 &&
+      typeof obs.location[0] === 'number' &&
+      typeof obs.location[1] === 'number' &&
+      obs.location[0] >= -180 && obs.location[0] <= 180 && // Validate longitude
+      obs.location[1] >= -90 && obs.location[1] <= 90     // Validate latitude
+    );
 
+    if (validObservations.length === 0) {
+      // If no valid observations, use the first observation's coordinates if available
+      const firstObs = observations[0];
+      if (firstObs?.location && Array.isArray(firstObs.location) && firstObs.location.length === 2) {
+        const [lng, lat] = firstObs.location;
+        // Ensure coordinates are within valid ranges
+        const validLat = Math.max(-90, Math.min(90, lat));
+        const validLng = Math.max(-180, Math.min(180, lng));
+        return {
+          latitude: validLat,
+          longitude: validLng,
+          latitudeDelta: 0.1,
+          longitudeDelta: 0.1,
+        };
+      }
+      // Fallback to world view
       return {
-        latitude: midLat,
-        longitude: midLng,
-        latitudeDelta,
-        longitudeDelta,
-      };
-    } catch (error) {
-      console.error('Error computing map region:', error);
-      // Return default region if calculation fails
-      return {
-        latitude: 20,
+        latitude: 0,
         longitude: 0,
         latitudeDelta: 90,
         longitudeDelta: 180,
       };
     }
+
+    // Calculate bounds from valid observations
+    let minLat = 90, maxLat = -90, minLng = 180, maxLng = -180;
+    
+    validObservations.forEach(obs => {
+      const [lng, lat] = obs.location;
+      // Ensure coordinates are within valid ranges
+      const validLat = Math.max(-90, Math.min(90, lat));
+      const validLng = Math.max(-180, Math.min(180, lng));
+      minLat = Math.min(minLat, validLat);
+      maxLat = Math.max(maxLat, validLat);
+      minLng = Math.min(minLng, validLng);
+      maxLng = Math.max(maxLng, validLng);
+    });
+
+    const centerLat = (minLat + maxLat) / 2;
+    const centerLng = (minLng + maxLng) / 2;
+    
+    // Calculate deltas with reasonable bounds
+    const latDelta = Math.min(90, Math.max(0.1, (maxLat - minLat) * 1.5));
+    const lngDelta = Math.min(180, Math.max(0.1, (maxLng - minLng) * 1.5));
+
+    return {
+      latitude: centerLat,
+      longitude: centerLng,
+      latitudeDelta: latDelta,
+      longitudeDelta: lngDelta,
+    };
   };
 
   useEffect(() => {
@@ -140,9 +154,14 @@ export default function PlantInfoScreen() {
     const loadData = async () => {
       try {
         setIsProcessing(true);
-        if (photoUri && !observationId) {  // Only check confidence for new photos, not existing observations
+        console.log('Starting data load...');
+        
+        if (photoUri && !observationId) {
+          console.log('Processing new photo...');
           // If we have a photo, predict the plant
           const prediction = await predictImage(photoUri);    
+          console.log('Prediction received:', prediction);
+          
           if (!prediction) {
             console.error('No prediction returned from predictImage');
             return;
@@ -154,6 +173,7 @@ export default function PlantInfoScreen() {
 
           // Check prediction confidence before proceeding
           if (prediction.probability < 0.5) {
+            console.log('Low confidence prediction:', prediction.probability);
             setPredictionProbability(prediction.probability);
             setShowLowConfidenceMessage(true);
             setIsProcessing(false);
@@ -162,6 +182,8 @@ export default function PlantInfoScreen() {
 
           // Convert plant_id to plant name
           const plantName = getPlantNameFromId(prediction.plant_id);
+          console.log('Converted plant ID to name:', plantName);
+          
           if (!plantName) {
             console.error('Could not find plant name for ID:', prediction.plant_id);
             return;
@@ -173,27 +195,66 @@ export default function PlantInfoScreen() {
             return;
           }
             
+          console.log('Fetching and saving plant data...');
           const result = await plantService.fetchPlantAndSave(
             plantName,
             auth.currentUser.uid,
             prediction.probability
           );
+          console.log('Plant data fetched and saved:', result);
           
-          setPlantInfo(result.plantData as PlantInfo);
-          setObservations(result.observations);
-          setPredictionProbability(result.probability);
-          setMapRegion(computeMapRegion(result.observations || []));
-        } else {
+          // Validate data before setting state
+          if (!result || !result.plantData) {
+            console.error('Invalid result from fetchPlantAndSave:', result);
+            return;
+          }
+
+          try {
+            setPlantInfo(result.plantData as PlantInfo);
+            setObservations(result.observations || []);
+            setPredictionProbability(result.probability);
+            const region = computeMapRegion(result.observations || []);
+            console.log('Computed map region:', region);
+            setMapRegion(region);
+          } catch (stateError) {
+            console.error('Error setting state:', stateError);
+          }
+        } else if (observationId) {
+          console.log('Loading existing observation...');
           // If no photo or it's an existing observation, get plant info
           const result = await plantService.getPlantInfo(observationId);
-          setPlantInfo(result.plantData as PlantInfo);
-          setObservations(result.observations);
-          setPredictionProbability(result.probability);
-          setMapRegion(computeMapRegion(result.observations || []));
+          console.log('Existing observation loaded:', result);
+          
+          if (!result || !result.plantData) {
+            console.error('Invalid result from getPlantInfo:', result);
+            return;
+          }
+
+          try {
+            setPlantInfo(result.plantData as PlantInfo);
+            setObservations(result.observations || []);
+            setPredictionProbability(result.probability);
+            const region = computeMapRegion(result.observations || []);
+            console.log('Computed map region:', region);
+            setMapRegion(region);
+          } catch (stateError) {
+            console.error('Error setting state:', stateError);
+          }
+        } else {
+          console.error('No photoUri or observationId provided');
+          router.back();
         }
       } catch (error) {
         console.error('Error loading plant data:', error);
+        if (error instanceof Error) {
+          console.error('Error details:', {
+            message: error.message,
+            stack: error.stack,
+            name: error.name
+          });
+        }
       } finally {
+        console.log('Finishing data load...');
         setLoadingMap(false);
         setIsProcessing(false);
       }
@@ -215,6 +276,24 @@ export default function PlantInfoScreen() {
     );
   }
 
+  // Add error boundary
+  if (!plantInfo && !showLowConfidenceMessage) {
+    return (
+      <View style={[styles.container, { paddingTop: insets.top }]}>
+        <LinearGradient colors={['#2c6e49', '#4c956c']} style={StyleSheet.absoluteFillObject} />
+        <PlantHeader 
+          title="Error" 
+          onBack={() => router.back()} 
+        />
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>
+            Unable to load plant information. Please try again.
+          </Text>
+        </View>
+      </View>
+    );
+  }
+
   return (
     <>
       <Stack.Screen
@@ -225,7 +304,21 @@ export default function PlantInfoScreen() {
       />
       <View style={[styles.container, { paddingTop: insets.top }]}>
         <LinearGradient colors={['#2c6e49', '#4c956c']} style={StyleSheet.absoluteFillObject} />
-        <PlantHeader title={showLowConfidenceMessage ? "Plant Identification" : plantInfo?.name || ""} onBack={() => router.back()} />
+        <PlantHeader 
+          title={showLowConfidenceMessage ? "Plant Identification" : plantInfo?.name || ""} 
+          onBack={() => {
+            if (photoUri) {
+              // If we came from identification (has photoUri), go back to identification
+              router.push('/(tabs)/identification');
+            } else if (observationId) {
+              // If we came from get recent screen (has observationId), go back to home
+              router.push('/(tabs)/home');
+            } else {
+              // Otherwise use default back behavior
+              router.back();
+            }
+          }} 
+        />
         <ScrollView contentContainerStyle={styles.content}>
           {showLowConfidenceMessage ? (
             <LowConfidenceMessage />
@@ -286,4 +379,15 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   askBtnText: { color: '#fff', fontWeight: '600', fontSize: 16 },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  errorText: {
+    color: '#ffffff',
+    fontSize: 16,
+    textAlign: 'center',
+  },
 });

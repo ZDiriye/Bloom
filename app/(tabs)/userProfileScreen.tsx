@@ -1,10 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
   View,
-  Text,
-  Image,
   ScrollView,
-  ActivityIndicator,
   StyleSheet,
   SafeAreaView,
 } from 'react-native';
@@ -12,36 +9,32 @@ import { useTheme } from '@react-navigation/native';
 import { getUserProfileData } from '../../services/plantService';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
 import PlantHeader from '../../components/plant_info/PlantHeader';
-
-interface User {
-  displayName?: string;
-  xp?: number;
-  photoURL?: string;
-}
-
-interface RarestPlant {
-  id: string;
-  name: string;
-  commonName?: string;
-  observationsCount: number;
-  photo?: string;
-}
-
-interface MostRecentPlant {
-  id: string;
-  name: string;
-  commonName?: string;
-  photo?: string;
-  timestamp: any;
-}
+import { UserProfileHeader } from '../../components/profile/UserProfileHeader';
+import { UserStatsCard } from '../../components/profile/UserStatsCard';
+import { PlantDiscoveryCard } from '../../components/profile/PlantDiscoveryCard';
+import { LoadingState } from '../../components/common/LoadingState';
+import { ErrorState } from '../../components/common/ErrorState';
 
 interface ProfileData {
-  user: User;
+  user: {
+    displayName?: string;
+    xp?: number;
+    photoURL?: string;
+  };
   totalIdentifications: number;
-  rarestPlant?: RarestPlant;
-  mostRecentPlant?: MostRecentPlant;
+  rarestPlant?: {
+    name: string;
+    commonName?: string;
+    photo?: string;
+    observationsCount: number;
+  };
+  mostRecentPlant?: {
+    name: string;
+    commonName?: string;
+    photo?: string;
+    timestamp: any;
+  };
 }
 
 export default function UserProfileScreen() {
@@ -82,10 +75,7 @@ export default function UserProfileScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <LinearGradient colors={['#2c6e49', '#4c956c']} style={StyleSheet.absoluteFillObject} />
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#ffffff" />
-          <Text style={styles.loadingText}>Loading profile...</Text>
-        </View>
+        <LoadingState message="Loading profile..." />
       </SafeAreaView>
     );
   }
@@ -94,10 +84,7 @@ export default function UserProfileScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <LinearGradient colors={['#2c6e49', '#4c956c']} style={StyleSheet.absoluteFillObject} />
-        <View style={styles.errorContainer}>
-          <Ionicons name="alert-circle" size={48} color="#ffffff" />
-          <Text style={styles.errorText}>{error || 'Could not load profile'}</Text>
-        </View>
+        <ErrorState message={error || 'Could not load profile'} />
       </SafeAreaView>
     );
   }
@@ -107,87 +94,33 @@ export default function UserProfileScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <LinearGradient colors={['#2c6e49', '#4c956c']} style={StyleSheet.absoluteFillObject} />
-      <PlantHeader title="User Profile" onBack={() => router.back()} />
+      <PlantHeader title="User Profile" onBack={() => router.push('/(tabs)/leaderboard')} />
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Header Section */}
-        <View style={styles.header}>
-          {user.photoURL ? (
-            <Image source={{ uri: user.photoURL }} style={styles.avatar} />
-          ) : (
-            <View style={styles.avatarPlaceholder}>
-              <Ionicons name="person" size={40} color="#ffffff" />
-            </View>
-          )}
-          <Text style={styles.name}>{user.displayName || 'Anonymous'}</Text>
-          <View style={styles.xpContainer}>
-            <Ionicons name="trophy" size={20} color="#FFD700" />
-            <Text style={styles.xp}>{user.xp?.toLocaleString() || 0} XP</Text>
-          </View>
-        </View>
+        <UserProfileHeader
+          photoURL={user.photoURL}
+          displayName={user.displayName || 'Anonymous'}
+          xp={user.xp || 0}
+        />
+        
+        <UserStatsCard
+          totalIdentifications={totalIdentifications}
+          xp={user.xp || 0}
+        />
 
-        {/* Stats Section */}
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Statistics</Text>
-          <View style={styles.statsGrid}>
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>{totalIdentifications}</Text>
-              <Text style={styles.statLabel}>Total Identifications</Text>
-            </View>
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>{user.xp || 0}</Text>
-              <Text style={styles.statLabel}>Experience Points</Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Most Recent Identification Section */}
         {mostRecentPlant && (
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Most Recent Discovery</Text>
-            <View style={styles.plantRow}>
-              {mostRecentPlant.photo ? (
-                <Image source={{ uri: mostRecentPlant.photo }} style={styles.plantPhoto} />
-              ) : (
-                <View style={[styles.plantPhoto, styles.plantPhotoPlaceholder]}>
-                  <Ionicons name="leaf" size={24} color="#ffffff" />
-                </View>
-              )}
-              <View style={styles.plantInfo}>
-                <Text style={styles.plantName}>
-                  {mostRecentPlant.commonName || mostRecentPlant.name}
-                </Text>
-                <Text style={styles.plantScientificName}>{mostRecentPlant.name}</Text>
-                <Text style={styles.plantCount}>
-                  Identified on {new Date(mostRecentPlant.timestamp.toDate()).toLocaleDateString()}
-                </Text>
-              </View>
-            </View>
-          </View>
+          <PlantDiscoveryCard
+            title="Most Recent Discovery"
+            plant={mostRecentPlant}
+            showDate={true}
+          />
         )}
 
-        {/* Rarest Plant Section */}
         {rarestPlant && (
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Rarest Discovery</Text>
-            <View style={styles.plantRow}>
-              {rarestPlant.photo ? (
-                <Image source={{ uri: rarestPlant.photo }} style={styles.plantPhoto} />
-              ) : (
-                <View style={[styles.plantPhoto, styles.plantPhotoPlaceholder]}>
-                  <Ionicons name="leaf" size={24} color="#ffffff" />
-                </View>
-              )}
-              <View style={styles.plantInfo}>
-                <Text style={styles.plantName}>
-                  {rarestPlant.commonName || rarestPlant.name}
-                </Text>
-                <Text style={styles.plantScientificName}>{rarestPlant.name}</Text>
-                <Text style={styles.plantCount}>
-                  Global observations: {rarestPlant.observationsCount.toLocaleString()}
-                </Text>
-              </View>
-            </View>
-          </View>
+          <PlantDiscoveryCard
+            title="Rarest Discovery"
+            plant={rarestPlant}
+            showObservations={true}
+          />
         )}
       </ScrollView>
     </SafeAreaView>
@@ -200,139 +133,5 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 20,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    marginTop: 10,
-    color: '#ffffff',
-    fontSize: 16,
-  },
-  errorContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  errorText: {
-    marginTop: 10,
-    color: '#ffffff',
-    fontSize: 16,
-    textAlign: 'center',
-  },
-  header: {
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  avatar: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    marginBottom: 16,
-    borderWidth: 3,
-    borderColor: 'rgba(255,255,255,0.3)',
-  },
-  avatarPlaceholder: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 16,
-    borderWidth: 3,
-    borderColor: 'rgba(255,255,255,0.3)',
-  },
-  name: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#ffffff',
-    marginBottom: 8,
-  },
-  xpContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-  },
-  xp: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#ffffff',
-    marginLeft: 8,
-  },
-  card: {
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
-  },
-  cardTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#ffffff',
-    marginBottom: 12,
-  },
-  statsGrid: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  statItem: {
-    flex: 1,
-    alignItems: 'center',
-    padding: 12,
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    borderRadius: 12,
-    marginHorizontal: 8,
-  },
-  statValue: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#ffffff',
-    marginBottom: 4,
-  },
-  statLabel: {
-    fontSize: 14,
-    color: 'rgba(255,255,255,0.8)',
-    textAlign: 'center',
-  },
-  plantRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  plantPhoto: {
-    width: 80,
-    height: 80,
-    borderRadius: 12,
-    marginRight: 16,
-  },
-  plantPhotoPlaceholder: {
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  plantInfo: {
-    flex: 1,
-  },
-  plantName: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#ffffff',
-    marginBottom: 4,
-  },
-  plantScientificName: {
-    fontSize: 14,
-    color: 'rgba(255,255,255,0.7)',
-    fontStyle: 'italic',
-    marginBottom: 8,
-  },
-  plantCount: {
-    fontSize: 14,
-    color: 'rgba(255,255,255,0.8)',
   },
 });

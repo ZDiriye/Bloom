@@ -65,6 +65,7 @@ export default function PlantChatModal({
       visible={visible}
       presentationStyle="fullScreen"
       onRequestClose={onClose}
+      testID="chat-modal"
     >
       <KeyboardAvoidingView
       style={{ flex: 1 }}
@@ -75,7 +76,7 @@ export default function PlantChatModal({
         {/* -------- header -------- */}
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Gemini Chat</Text>
-          <TouchableOpacity onPress={onClose}>
+          <TouchableOpacity onPress={onClose} testID="close-button">
             <Text style={styles.closeText}>Close</Text>
           </TouchableOpacity>
         </View>
@@ -84,11 +85,13 @@ export default function PlantChatModal({
         <ScrollView
           style={styles.chatArea}
           contentContainerStyle={{ padding: 16 }}
+          testID="chat-scroll"
         >
           {chat.map((msg, i) => (
             <Text
               key={i}
               style={msg.role === 'user' ? styles.userBubble : styles.botBubble}
+              testID={`chat-message-${i}`}
             >
               {msg.content}
             </Text>
@@ -104,8 +107,14 @@ export default function PlantChatModal({
             value={input}
             onChangeText={setInput}
             editable={!sending}
+            testID="chat-input"
           />
-          <TouchableOpacity style={styles.button} onPress={send} disabled={sending}>
+          <TouchableOpacity 
+            style={styles.button} 
+            onPress={send} 
+            disabled={sending}
+            testID="send-button"
+          >
             <Text style={styles.buttonText}>Send</Text>
           </TouchableOpacity>
         </View>

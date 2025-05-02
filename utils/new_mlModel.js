@@ -12,7 +12,7 @@ export async function predictImage(imageUri) {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
   
-      const response = await fetch('http://192.168.1.162:5000/predict', {
+      const response = await fetch('http://172.20.10.6:5000/predict', {
         method: 'POST',
         body: formData,
         signal: controller.signal,

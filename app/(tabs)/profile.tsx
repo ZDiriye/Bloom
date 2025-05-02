@@ -1,4 +1,4 @@
-import { View, StyleSheet, ScrollView, Text, TouchableOpacity, TextInput, Alert } from 'react-native';
+import { View, StyleSheet, ScrollView, Text, TouchableOpacity, TextInput, Alert, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -26,19 +26,27 @@ export default function ProfileScreen() {
   const [isEditing, setIsEditing] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [userData, setUserData] = useState<UserData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async currentUser => {
+      setIsLoading(true);
       setUser(currentUser);
       if (currentUser) {
-        const snap = await getDoc(doc(db, 'users', currentUser.uid));
-        if (snap.exists()) {
-          const data = snap.data() as UserData;
-          setUserData(data);
-          setDisplayName(data.displayName || '');
-          setEmail(data.email || '');
+        try {
+          const snap = await getDoc(doc(db, 'users', currentUser.uid));
+          if (snap.exists()) {
+            const data = snap.data() as UserData;
+            setUserData(data);
+            setDisplayName(data.displayName || '');
+            setEmail(data.email || '');
+          }
+        } catch (error) {
+          console.error('Error loading user data:', error);
+          Alert.alert('Error', 'Failed to load profile data');
         }
       }
+      setIsLoading(false);
     });
     return unsubscribe;
   }, []);
@@ -106,6 +114,21 @@ export default function ProfileScreen() {
     }
   };
 
+  if (isLoading) {
+    return (
+      <View style={[styles.container, { paddingTop: insets.top }]}>
+        <LinearGradient colors={['#2c6e49', '#4c956c']} style={StyleSheet.absoluteFillObject} />
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Profile</Text>
+        </View>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#ffffff" />
+          <Text style={styles.loadingText}>Loading profile...</Text>
+        </View>
+      </View>
+    );
+  }
+
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <LinearGradient colors={['#2c6e49', '#4c956c']} style={StyleSheet.absoluteFillObject} />
@@ -133,30 +156,37 @@ export default function ProfileScreen() {
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Display Name</Text>
               {isEditing ? (
-                <TextInput style={styles.input} value={displayName} onChangeText={setDisplayName} placeholder="Enter display name" />
+                <TextInput 
+                  style={styles.input} 
+                  value={displayName} 
+                  onChangeText={setDisplayName} 
+                  placeholder="Enter display name" 
+                />
               ) : (
                 <Text style={styles.text}>{displayName || 'Not set'}</Text>
               )}
             </View>
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Email</Text>
-              {isEditing ? (
-                <TextInput style={styles.input} value={email} onChangeText={setEmail} placeholder="Enter email" keyboardType="email-address" autoCapitalize="none" />
-              ) : (
-                <Text style={styles.text}>{email}</Text>
-              )}
+              <Text style={styles.text}>{email}</Text>
             </View>
             {isChangingPassword && (
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>New Password</Text>
-                <TextInput style={styles.input} value={newPassword} onChangeText={setNewPassword} placeholder="Enter new password" secureTextEntry />
+                <TextInput 
+                  style={styles.input} 
+                  value={newPassword} 
+                  onChangeText={setNewPassword} 
+                  placeholder="Enter new password" 
+                  secureTextEntry 
+                />
               </View>
             )}
             <View style={styles.buttonContainer}>
               {isEditing ? (
                 <>
                   <TouchableOpacity style={[styles.button, styles.saveButton]} onPress={handleUpdateProfile}>
-                    <Text style={styles.buttonText}>Save Changes</Text>
+                    <Text style={styles.buttonText}>Save</Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={[styles.button, styles.cancelButton]} onPress={() => setIsEditing(false)}>
                     <Text style={styles.buttonText}>Cancel</Text>
@@ -167,20 +197,15 @@ export default function ProfileScreen() {
                   <Text style={styles.buttonText}>Edit Profile</Text>
                 </TouchableOpacity>
               )}
+              {!isEditing && (
+                <TouchableOpacity style={[styles.button, styles.passwordButton]} onPress={() => setIsChangingPassword(!isChangingPassword)}>
+                  <Text style={styles.buttonText}>Change Password</Text>
+                </TouchableOpacity>
+              )}
+              <TouchableOpacity style={[styles.button, styles.logoutButton]} onPress={handleLogout}>
+                <Text style={styles.buttonText}>Logout</Text>
+              </TouchableOpacity>
             </View>
-            {!isEditing && (
-              <TouchableOpacity style={[styles.button, styles.passwordButton]} onPress={() => setIsChangingPassword(!isChangingPassword)}>
-                <Text style={styles.buttonText}>{isChangingPassword ? 'Cancel Password Change' : 'Change Password'}</Text>
-              </TouchableOpacity>
-            )}
-            {isChangingPassword && (
-              <TouchableOpacity style={[styles.button, styles.saveButton]} onPress={handlePasswordChange}>
-                <Text style={styles.buttonText}>Update Password</Text>
-              </TouchableOpacity>
-            )}
-            <TouchableOpacity style={[styles.button, styles.logoutButton]} onPress={handleLogout}>
-              <Text style={styles.buttonText}>Logout</Text>
-            </TouchableOpacity>
           </View>
         </View>
       </ScrollView>
@@ -189,27 +214,97 @@ export default function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  header: { padding: 16, alignItems: 'center' },
-  headerTitle: { fontSize: 24, fontWeight: 'bold', color: '#fff' },
-  content: { padding: 16, paddingBottom: 80 },
-  profileSection: { backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 12, padding: 20, marginBottom: 20 },
-  avatarContainer: { alignItems: 'center', marginBottom: 20 },
-  infoContainer: { gap: 16 },
-  statsContainer: { flexDirection: 'row', justifyContent: 'space-around', marginBottom: 20, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 8, padding: 16 },
-  statItem: { alignItems: 'center' },
-  statValue: { fontSize: 20, fontWeight: 'bold', color: '#fff' },
-  statLabel: { fontSize: 14, color: '#fff', marginTop: 4 },
-  inputGroup: { marginBottom: 16 },
-  label: { fontSize: 16, color: '#fff', marginBottom: 8 },
-  input: { backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 8, padding: 12, color: '#fff' },
-  text: { fontSize: 16, color: '#fff', padding: 12 },
-  buttonContainer: { flexDirection: 'row', gap: 10, marginTop: 10 },
-  button: { flex: 1, padding: 12, borderRadius: 8, alignItems: 'center' },
+  container: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
+  header: {
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.1)',
+  },
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#fff',
+  },
+  content: {
+    padding: 16,
+  },
+  profileSection: {
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderRadius: 12,
+    padding: 16,
+  },
+  avatarContainer: {
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  infoContainer: {
+    gap: 16,
+  },
+  statsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderRadius: 8,
+    padding: 12,
+  },
+  statItem: {
+    alignItems: 'center',
+  },
+  statValue: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#fff',
+  },
+  statLabel: {
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.8)',
+  },
+  inputGroup: {
+    marginBottom: 12,
+  },
+  label: {
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.8)',
+    marginBottom: 4,
+  },
+  input: {
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderRadius: 8,
+    padding: 12,
+    color: '#fff',
+  },
+  text: {
+    fontSize: 16,
+    color: '#fff',
+    padding: 12,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderRadius: 8,
+  },
+  buttonContainer: {
+    gap: 12,
+  },
+  button: {
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
   editButton: { backgroundColor: '#4c956c' },
   saveButton: { backgroundColor: '#2c6e49' },
   cancelButton: { backgroundColor: '#666' },
-  passwordButton: { backgroundColor: '#4c956c', marginTop: 10 },
-  logoutButton: { backgroundColor: '#dc3545', marginTop: 20 },
+  passwordButton: { backgroundColor: '#4c956c' },
+  logoutButton: { backgroundColor: '#dc3545' },
   buttonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    color: '#ffffff',
+    fontSize: 16,
+    marginTop: 16,
+  },
 });

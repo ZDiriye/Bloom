@@ -34,15 +34,15 @@ const PlantMap: React.FC<PlantMapProps> = ({ observations, mapRegion, loading })
   }, [validObservations]);
 
   return (
-    <View style={styles.section}>
+    <View style={styles.section} testID="map-section">
       <Text style={styles.sectionTitle}>Observation Locations</Text>
       {loading ? (
         <View style={styles.mapPlaceholder}>
-          <ActivityIndicator size="small" color="#ffffff" />
+          <ActivityIndicator size="small" color="#ffffff" testID="activity-indicator" />
           <Text style={styles.mapLoadingText}>Loading observation map...</Text>
         </View>
       ) : (
-        <View style={styles.mapContainer}>
+        <View style={styles.mapContainer} testID="map-container">
           <MapView 
             style={styles.map} 
             region={mapRegion}

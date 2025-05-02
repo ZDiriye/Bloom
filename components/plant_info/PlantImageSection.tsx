@@ -15,15 +15,16 @@ const PlantImageSection: React.FC<PlantImageSectionProps> = ({
   commonName 
 }) => {
   return (
-    <View style={styles.imageContainer}>
+    <View style={styles.imageContainer} testID="image-container">
       {imageUrl ? (
         <Image
           source={{ uri: imageUrl }}
           style={styles.mainImage}
           resizeMode="cover"
+          testID="plant-image"
         />
       ) : (
-        <View style={styles.placeholderImage}>
+        <View style={styles.placeholderImage} testID="placeholder-image">
           <Ionicons name="leaf-outline" size={60} color="#ffffff" />
         </View>
       )}

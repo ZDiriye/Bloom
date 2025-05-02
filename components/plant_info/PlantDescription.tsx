@@ -10,7 +10,7 @@ const PlantDescription: React.FC<PlantDescriptionProps> = ({ description }) => {
   const cleanDescription = description.replace(/<\/?[^>]+(>|$)/g, '');
   
   return (
-    <View style={styles.section}>
+    <View style={styles.section} testID="description-section">
       <Text style={styles.sectionTitle}>Description</Text>
       <Text style={styles.description}>{cleanDescription}</Text>
     </View>

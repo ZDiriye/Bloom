@@ -9,8 +9,8 @@ interface PlantHeaderProps {
 
 const PlantHeader: React.FC<PlantHeaderProps> = ({ title, onBack }) => {
   return (
-    <View style={styles.header}>
-      <TouchableOpacity onPress={onBack} style={styles.backButton}>
+    <View style={styles.header} testID="plant-header">
+      <TouchableOpacity onPress={onBack} style={styles.backButton} testID="back-button">
         <Ionicons name="arrow-back" size={24} color="#ffffff" />
       </TouchableOpacity>
       <Text numberOfLines={1} style={styles.headerTitle}>{title}</Text>

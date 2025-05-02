@@ -14,42 +14,21 @@ interface PlantTaxonomyProps {
 const PlantTaxonomy: React.FC<PlantTaxonomyProps> = ({ ancestors = [], currentSpecies }) => {
   return (
     <View style={styles.section}>
-      <Text style={styles.sectionTitle}>Taxonomic Hierarchy</Text>
+      <Text style={styles.sectionTitle}>Taxonomic Classification</Text>
       
-      <View style={styles.taxonomyContainer}>
-        {ancestors.map((ancestor, index) => {
-          // Determine depth level for indentation
-          const depth = index;
-          return (
-            <View key={ancestor.rank} style={[
-              styles.taxonomyItem,
-              { marginLeft: depth * 12 }
-            ]}>
-              <View style={[
-                styles.taxonomyBullet, 
-                { backgroundColor: `rgba(255,255,255,${0.4 + (index * 0.07)})` }
-              ]} />
-              <View style={styles.taxonomyTextContainer}>
-                <Text style={styles.taxonomyRank}>
-                  {ancestor.rank.charAt(0).toUpperCase() + ancestor.rank.slice(1)}
-                </Text>
-                <Text style={styles.taxonomyName}>{ancestor.name}</Text>
-              </View>
-            </View>
-          );
-        })}
-        
-        {/* Current species with special highlight */}
-        <View style={[
-          styles.taxonomyItem, 
-          styles.currentSpecies,
-          { marginLeft: ancestors.length * 12 }
-        ]}>
-          <View style={styles.taxonomyBullet} />
-          <View style={styles.taxonomyTextContainer}>
-            <Text style={styles.taxonomyRank}>Species</Text>
-            <Text style={styles.currentSpeciesName}>{currentSpecies}</Text>
+      <View style={styles.table}>
+        {ancestors.map((ancestor) => (
+          <View key={ancestor.rank} style={styles.row}>
+            <Text style={styles.rank}>
+              {ancestor.rank.charAt(0).toUpperCase() + ancestor.rank.slice(1)}
+            </Text>
+            <Text style={styles.name}>{ancestor.name}</Text>
           </View>
+        ))}
+        
+        <View style={styles.row}>
+          <Text style={styles.rank}>Species</Text>
+          <Text style={[styles.name, styles.species]}>{currentSpecies}</Text>
         </View>
       </View>
     </View>
@@ -69,44 +48,24 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     marginBottom: 16,
   },
-  taxonomyContainer: {
-    paddingLeft: 8,
+  table: {
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderRadius: 8,
+    padding: 12,
   },
-  taxonomyItem: {
+  row: {
     flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-    position: 'relative',
+    marginBottom: 8,
   },
-  taxonomyBullet: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: 'rgba(255,255,255,0.8)',
-    marginRight: 12,
-  },
-  taxonomyTextContainer: {
-    flex: 1,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.1)',
-    paddingBottom: 8,
-  },
-  taxonomyRank: {
-    fontSize: 12,
+  rank: {
+    width: 100,
     color: 'rgba(255,255,255,0.7)',
-    marginBottom: 4,
   },
-  taxonomyName: {
-    fontSize: 15,
+  name: {
+    flex: 1,
     color: '#ffffff',
   },
-  currentSpecies: {
-    marginTop: 8,
-  },
-  currentSpeciesName: {
-    fontSize: 16,
-    color: '#ffffff',
-    fontWeight: '700',
+  species: {
     fontStyle: 'italic',
   },
 });

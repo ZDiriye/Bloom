@@ -5,8 +5,8 @@ import { router } from 'expo-router';
 
 const LowConfidenceMessage: React.FC = () => {
   return (
-    <View style={styles.container}>
-      <View style={styles.iconContainer}>
+    <View style={styles.container} testID="low-confidence-container">
+      <View style={styles.iconContainer} testID="alert-icon">
         <Ionicons name="alert-circle" size={48} color="#ffc107" />
       </View>
       <Text style={styles.title}>Photo Not Clear</Text>
@@ -22,8 +22,9 @@ const LowConfidenceMessage: React.FC = () => {
         <TouchableOpacity 
           style={styles.button}
           onPress={() => router.push('/CameraModal')}
+          testID="retake-button"
         >
-          <Ionicons name="camera" size={24} color="#ffffff" />
+          <Ionicons name="camera" size={24} color="#ffffff" testID="camera-icon" />
           <Text style={styles.buttonText}>Retake Photo</Text>
         </TouchableOpacity>
       </View>
