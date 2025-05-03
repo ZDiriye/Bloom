@@ -1,10 +1,12 @@
 const { getDefaultConfig } = require('expo/metro-config');
 
-const config = getDefaultConfig(__dirname);
+const defaultConfig = getDefaultConfig(__dirname);
+// turn the new flag off
+defaultConfig.resolver.unstable_enablePackageExports = false;
 
-config.resolver.assetExts.push(
+defaultConfig.resolver.assetExts.push(
   'bin', 
   'json'
 );
 
-module.exports = config;
+module.exports = defaultConfig;
