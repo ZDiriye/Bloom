@@ -1,4 +1,6 @@
 // utils/mlModel.js
+const SERVER_URL = 'http://192.168.1.162:5000'; // Your local network IP address
+
 export async function predictImage(imageUri) {
     let formData = new FormData();
     formData.append('image', {
@@ -10,9 +12,9 @@ export async function predictImage(imageUri) {
     try {
       // Add a timeout to the fetch request
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+      const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout
   
-      const response = await fetch('http://172.20.10.6:5000/predict', {
+      const response = await fetch(`${SERVER_URL}/predict`, {
         method: 'POST',
         body: formData,
         signal: controller.signal,

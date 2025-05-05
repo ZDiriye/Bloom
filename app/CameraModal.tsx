@@ -130,47 +130,46 @@ export default function App() {
         facing={facing} 
         flash={flash} 
         ref={cameraRef}
-      >
-        <View style={styles.controlsContainer}>
-          <SafeAreaView style={styles.header}>
-            <TouchableOpacity 
-              style={styles.iconButton} 
-              onPress={closeCamera}
-            >
-              <Ionicons name="close" size={28} color="white" />
-            </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={[styles.iconButton, flash === 'on' && styles.activeButton]} 
-              onPress={() => setFlash(current => current === 'off' ? 'on' : 'off')}
-            >
-              <Ionicons 
-                name={flash === 'on' ? "flash" : "flash-off"} 
-                size={28} 
-                color="white" 
-              />
-            </TouchableOpacity>
-          </SafeAreaView>
+      />
+      <View style={styles.controlsContainer}>
+        <SafeAreaView style={styles.header}>
+          <TouchableOpacity 
+            style={styles.iconButton} 
+            onPress={closeCamera}
+          >
+            <Ionicons name="close" size={28} color="white" />
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={[styles.iconButton, flash === 'on' && styles.activeButton]} 
+            onPress={() => setFlash(current => current === 'off' ? 'on' : 'off')}
+          >
+            <Ionicons 
+              name={flash === 'on' ? "flash" : "flash-off"} 
+              size={28} 
+              color="white" 
+            />
+          </TouchableOpacity>
+        </SafeAreaView>
 
-          <SafeAreaView style={styles.bottomControls}>
-            <View style={styles.bottomSpacer} />
-            
-            <TouchableOpacity 
-              style={styles.captureButton} 
-              onPress={takePicture}
-            >
-              <View style={styles.captureInner} />
-            </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={styles.iconButton} 
-              onPress={toggleCameraFacing}
-            >
-              <Ionicons name="camera-reverse" size={32} color="white" />
-            </TouchableOpacity>
-          </SafeAreaView>
-        </View>
-      </CameraView>
+        <SafeAreaView style={styles.bottomControls}>
+          <View style={styles.bottomSpacer} />
+          
+          <TouchableOpacity 
+            style={styles.captureButton} 
+            onPress={takePicture}
+          >
+            <View style={styles.captureInner} />
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={styles.iconButton} 
+            onPress={toggleCameraFacing}
+          >
+            <Ionicons name="camera-reverse" size={32} color="white" />
+          </TouchableOpacity>
+        </SafeAreaView>
+      </View>
     </View>
   );
 }
@@ -186,7 +185,7 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
   },
   controlsContainer: {
-    flex: 1,
+    ...StyleSheet.absoluteFillObject,
     backgroundColor: 'transparent',
     justifyContent: 'space-between',
   },
