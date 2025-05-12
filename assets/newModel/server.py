@@ -69,6 +69,7 @@ def predict():
             image = image.convert('RGB')
     except Exception as e:
         return jsonify({'error': 'Invalid image'}), 400
+        
 
     target_size = (input_shape[1], input_shape[2])
     input_data = preprocess_image(image, target_size)
@@ -89,3 +90,4 @@ def predict():
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
+    

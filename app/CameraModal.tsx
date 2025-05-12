@@ -287,3 +287,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
   }
 });
+
+// Add limits to cloud functions and firestore, gemini api is on free tier so don't worry. 
+// Cap cloud functions at 300000 requests per month
+// firestore to the free tier limit  1 GiB of storage. Also 50 000 document reads, 20 000 writes, 20 000 deletes per day
+
+// see if firestore could be switched to zakariyadiriye3@gmail.com instead

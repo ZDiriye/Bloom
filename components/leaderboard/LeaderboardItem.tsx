@@ -67,10 +67,11 @@ export function LeaderboardItem({
             {photoURL ? (
               <Image 
                 source={{ uri: photoURL }} 
-                style={styles.profilePic} 
+                style={styles.profilePic}
+                testID="profile-image"
               />
             ) : (
-              <View style={styles.profilePicPlaceholder}>
+              <View style={styles.profilePicPlaceholder} testID="profile-placeholder">
                 <Ionicons name="person" size={18} color="#ffffff" />
               </View>
             )}

@@ -57,6 +57,7 @@ export function LoginForm({
         onPress={onLogin}
         disabled={loading}
         loading={loading}
+        testID="sign-in-button"
       >
         Sign In
       </AuthButton>
@@ -64,6 +65,7 @@ export function LoginForm({
       <TouchableOpacity 
         style={styles.link} 
         onPress={onRegister}
+        testID="register-link"
       >
         <ThemedText style={styles.linkText}>Create an account</ThemedText>
       </TouchableOpacity>

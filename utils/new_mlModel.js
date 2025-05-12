@@ -1,5 +1,4 @@
-// utils/mlModel.js
-const SERVER_URL = 'http://192.168.1.162:5000'; // Your local network IP address
+const SERVER_URL = 'http://172.20.10.6:5000'; // change 172.20.10.6 to your network IP address to run the server on your local machine
 
 export async function predictImage(imageUri) {
     let formData = new FormData();
@@ -34,7 +33,7 @@ export async function predictImage(imageUri) {
       if (!json || typeof json.plant_id !== 'string' || typeof json.probability !== 'number') {
         throw new Error('Invalid response from server');
       }
-  
+      
       return json;
     } catch (error) {
       console.error('Error in predictImage:', error);

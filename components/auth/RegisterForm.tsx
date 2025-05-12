@@ -66,6 +66,7 @@ export function RegisterForm({
         onPress={onRegister}
         disabled={loading}
         loading={loading}
+        testID="create-account-button"
       >
         Create Account
       </AuthButton>
@@ -73,6 +74,7 @@ export function RegisterForm({
       <TouchableOpacity 
         style={styles.link} 
         onPress={onLogin}
+        testID="login-link"
       >
         <ThemedText style={styles.linkText}>
           Already have an account? Login

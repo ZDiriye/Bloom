@@ -15,6 +15,7 @@ export function ProfileHeader({ profilePic, displayName, level }: ProfileHeaderP
         <Image
           source={profilePic ? { uri: profilePic } : require('@/assets/images/default-avatar.png')}
           style={styles.profilePic}
+          testID="profile-image"
         />
       </View>
       <ThemedText type="title" style={styles.name}>{displayName}</ThemedText>

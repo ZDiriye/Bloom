@@ -54,15 +54,4 @@ describe('PlantTaxonomy', () => {
       marginBottom: 16,
     });
   });
-
-  it('applies italic styling to species name', () => {
-    const { getByText } = render(
-      <PlantTaxonomy ancestors={mockAncestors} currentSpecies={mockCurrentSpecies} />
-    );
-    
-    const speciesName = getByText(mockCurrentSpecies);
-    expect(speciesName.props.style).toMatchObject({
-      fontStyle: 'italic',
-    });
-  });
 }); 

@@ -8,14 +8,16 @@ interface AuthButtonProps {
   loading?: boolean;
   children: React.ReactNode;
   style?: any;
+  testID?: string;
 }
 
-export function AuthButton({ onPress, disabled, loading, children, style }: AuthButtonProps) {
+export function AuthButton({ onPress, disabled, loading, children, style, testID }: AuthButtonProps) {
   return (
     <TouchableOpacity 
       style={[styles.button, style, disabled && styles.disabled]} 
       onPress={onPress}
       disabled={disabled || loading}
+      testID={testID}
     >
       {loading ? (
         <ActivityIndicator color="#fff" />

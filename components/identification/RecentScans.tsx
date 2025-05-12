@@ -83,10 +83,12 @@ export function RecentScans() {
             key={scan.id}
             style={styles.scanCard}
             onPress={() => handleScanPress(scan.plantData?.name || '', scan.id)}
+            testID="scan-card"
           >
             <Image
               source={{ uri: scan.plantData?.defaultPhoto }}
               style={styles.scanImage}
+              testID="scan-image"
             />
             <View style={styles.scanInfo}>
               <Text style={styles.plantName} numberOfLines={1}>
