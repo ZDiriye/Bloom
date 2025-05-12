@@ -7,15 +7,13 @@ Simplifying Plant Identification in a Fun Way!
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/Bloom.git
-   cd Bloom
+   git clone https://github.com/ZDiriye/Bloom.git
    ```
 
 ### Mobile Setup
 
 1. Install Expo Go on your mobile device:
    - iOS: Download from the [App Store](https://apps.apple.com/app/expo-go/id982107779)
-   - Android: Download from the [Google Play Store](https://play.google.com/store/apps/details?id=host.exp.exponent)
 
 ### Server Configuration
 
@@ -46,7 +44,7 @@ Simplifying Plant Identification in a Fun Way!
 
 3. Once the application starts, open another terminal window and start the Python server:
    ```bash
-   cd Bloom/assets/newModel
+   cd assets/newModel
    python server.py
    ```
    Note: If you encounter any errors on the server terminal, revisit the Server Configuration steps above to ensure your IP address and port settings are correct.
@@ -55,4 +53,8 @@ Simplifying Plant Identification in a Fun Way!
    - Scan the QR code that appears in your terminal with your phone's camera
    - The app will open in Expo Go and from there you can interact with the application
 
-Note: Make sure both the server and the application are running simultaneously for the app to function properly.
+Note: Make sure both the server and the application on the mobile phone are running simultaneously and are on the same wifi connetion for the app to function properly.
+
+### Tests
+
+1. Tests are in "components/__tests__"

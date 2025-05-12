@@ -1,4 +1,4 @@
-const SERVER_URL = 'http://172.20.10.6:5000'; // change 172.20.10.6 to your network IP address to run the server on your local machine
+const SERVER_URL = 'http://172.20.10.6:5001'; // change 172.20.10.6 to your network IP address to run the server on your local machine
 
 export async function predictImage(imageUri) {
     let formData = new FormData();
