@@ -57,4 +57,7 @@ Note: Make sure both the server and the application on the mobile phone are runn
 
 ### Tests
 
-1. Tests are in "components/__tests__"
+1. Tests are in "components/__tests__". To run the unit tests make sure you are in the bloom directory and run:
+   ```bash
+   npm test
+   ```
